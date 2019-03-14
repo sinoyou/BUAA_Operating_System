@@ -65,7 +65,8 @@ int readelf(u_char *binary, int size)
        // for each section header, output section number and section addr.
 		int i;
 		for (i=0;i<sh_entry_count;i++){
-			printf("%d:0x%x\n",i,(unsigned int)ptr_sh_table+sh_entry_size/sh_entry_count*i);
+			unsigned int addr = (unsigned int)(ptr_sh_table + sh_entry_size/sh_entry_count*i);
+			printf("%d:0x%x\n",i,addr);
 		}
 
         return 0;
