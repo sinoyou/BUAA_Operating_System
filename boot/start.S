@@ -26,16 +26,17 @@ LEAF(_start) /*LEAF is defined in asm.h and LEAF functions don't call other func
 	and	t0, ~0x7
 	ori	t0, 0x2
 	mtc0	t0, CP0_CONFIG
+
+	and sp,zero,zero
+ 	lui sp,0x8040
+	jal main
+	nop
 	
 /*To do: 
   set up stack 
   you can reference the memory layout in the include/mmu.h
 */
-	li sp 0x80400000
-	jal main
-	nop
-
-			
+				
 loop:
 	j	loop
 	nop
