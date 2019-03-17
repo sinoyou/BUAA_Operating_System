@@ -81,7 +81,7 @@ lp_Print(void (*output)(void *, char *, int),
 		padc = '0';		/*padding with 0*/
 		fmt++;
 	} else {
-		padc = '\0'		/*no padding*/
+		padc = '\0';	/*no padding*/
 	}
 	/* check for other prefixes */
 	while((*fmt<='9'&&*fmt>='0')&&*fmt!='\0') {
