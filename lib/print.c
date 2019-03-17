@@ -50,7 +50,7 @@ lp_Print(void (*output)(void *, char *, int),
     int longFlag;
     int negFlag;
     int width;
-    int prec;
+    int prec;		/*have not been used*/
     int ladjust;
     char padc;
 
@@ -59,16 +59,43 @@ lp_Print(void (*output)(void *, char *, int),
     for(;;) {
 	{ 
 	    /* scan for the next '%' */
+			while (*fmt!='%' && *fmt!='\0') {
+					OUTPUT(arg,*fmt,1);
+			}
 	    /* flush the string found so far */
-
+		
 	    /* are we hitting the end? */
+		if (*fmt=='\0') break;
 	}
 
 	/* we found a '%' */
-	
 	/* check for long */
-
+	fmt++;		/*fetch the next chat*/
+	if (*fmt=='-') {
+		ladjust = 1;
+		fmt++;
+	} else {
+		ladjust = 0;
+	} 
+	if (*fmt=='0') {
+		padc = '0';		/*padding with 0*/
+		fmt++;
+	} else {
+		padc = '\0'		/*no padding*/
+	}
 	/* check for other prefixes */
+	while((*fmt<='9'&&*fmt>='0')&&*fmt!='\0') {
+		width = width * 10 + *fmt-'0' ;
+		fmt ++;
+	}		/*will the next format output use the same width as the last one?????? */
+	/*here has some problem*/
+	if (*fmt=='l') {
+		longFlag = 1;
+		fmt++;
+	}
+
+
+
 
 	/* check format flag */
 	negFlag = 0;
