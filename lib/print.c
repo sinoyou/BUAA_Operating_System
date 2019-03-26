@@ -82,21 +82,20 @@ lp_Print(void (*output)(void *, char *, int),
 		padc = '0';		/*padding with 0*/
 		fmt++;
 	} else {
-		padc = '\0';	/*no padding*/
+		padc = ' ';	/*no padding*/
 	}
 	/* check for other prefixes */
+	width = 0;
 	while((*fmt<='9'&&*fmt>='0')&&*fmt!='\0') {
 		width = width * 10 + *fmt-'0' ;
 		fmt ++;
 	}		/*will the next format output use the same width as the last one?????? */
 	/*here has some problem*/
+	longFlag = 0;
 	if (*fmt=='l') {
 		longFlag = 1;
 		fmt++;
 	}
-
-
-
 
 	/* check format flag */
 	negFlag = 0;
