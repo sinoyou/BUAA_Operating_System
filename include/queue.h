@@ -40,7 +40,7 @@
  * linked so that an arbitrary element can be removed without traversing the list.  New
  * elements can be added to the list after an existing element or at the head of the list.
  * A LIST_HEAD structure is declared as follows:
- *
+ 
  *       LIST_HEAD(HEADNAME, TYPE) head;
  *
  * where HEADNAME is the name of the structure to be defined, and TYPE is the type of the
@@ -71,6 +71,8 @@
                 struct type *le_next;   /* next element */                      \
                 struct type **le_prev;  /* address of previous next element */  \
         }
+/* le_prev is the point of the last item's le_next  */
+/* le_prev = & (last_item's le_next)  */
 
 /*
  * List functions.
@@ -110,7 +112,14 @@
  */
 
 
-#define LIST_INSERT_AFTER(listelm, elm, field)
+#define LIST_INSERT_AFTER(listelm, elm, field) do{		\
+		(elm)->field.le_next = (listelm)->field.le_next;		\
+		if((elm)->field.le_next!=NULL)							\
+			LIST_NEXT((elm), field)->field.le_prev = &LIST_NEXT((elm), field);	\	
+		(listelm)->field.le_next = (elm);						\
+		(elm)->field.le_prev = &LIST_NEXT((listelm), field);	\
+	} while (0)
+		
         // Note: assign a to b <==> a = b
         //Step 1, assign elm.next to listelem.next.
         //Step 2: Judge whether listelm.next is NULL, if not, then assign listelm.pre to a proper value.
@@ -146,7 +155,20 @@
  * The "field" name is the link element as above. You can refer to LIST_INSERT_HEAD.
  * Note: this function has big differences with LIST_INSERT_HEAD !
  */
-#define LIST_INSERT_TAIL(head, elm, field)
+#define LIST_INSERT_TAIL(head, elm, field) do {								\
+		if(LIST_EMPTY(head)) {												\
+			LIST_FIRST((head)) = (elm);										\
+			LIST_NEXT((elm),field) = NULL;									\
+			(elm)->field.le_prev = &(LIST_FIRST((head)));					\
+		} else {															\
+				(elm)->field.le_next = NULL;								\
+				LIST_FOREACH(((elm)->field.le_next),head,field)  			\
+					if(((elm)->field.le_next)->field.le_next==NULL) break;	\
+				((elm)->field.le_next)->field.le_next = elm;				\
+				(elm)->field.le_prev = (elm)->field.le_next;				\
+				(elm)->field.le_next = NULL;								\
+			}																\
+		} while (0)
 /* finish your code here. */
 
 

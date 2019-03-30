@@ -78,7 +78,7 @@ lp_Print(void (*output)(void *, char *, int),
 	} else {
 		ladjust = 0;
 	} 
-	padc = ' '
+	padc = ' ';
 	if (*fmt=='0') {
 		padc = '0';		/*padding with 0*/
 		fmt++;
