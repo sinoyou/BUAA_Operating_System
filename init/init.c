@@ -29,21 +29,21 @@ void bcopy(const void *src, void *dst, size_t len)
 
 	max = dst + len;
 
-	// copy machine words while possible
+	// copy machine words while possiblea 前面按int 4个字节4个字节拷贝
 	while (dst + 3 < max) {
 		*(int *)dst = *(int *)src;
 		dst += 4;
 		src += 4;
 	}
 
-	// finish remaining 0-3 bytes
+	// finish remaining 0-3 bytes 最后几个byte单独处理
 	while (dst < max) {
 		*(char *)dst = *(char *)src;
 		dst += 1;
 		src += 1;
 	}
 }
-
+/*将从指针开始的指定长度的空间清零*/
 void bzero(void *b, size_t len)
 {
 	void *max;

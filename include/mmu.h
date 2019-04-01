@@ -17,11 +17,14 @@
 #define PDMAP		(4*1024*1024)	// bytes mapped by a page directory entry
 #define PGSHIFT		12
 #define PDSHIFT		22		// log2(PDMAP)
+// 取虚拟地址的页目录索引
 #define PDX(va)		((((u_long)(va))>>22) & 0x03FF)
+// 页表索引
 #define PTX(va)		((((u_long)(va))>>12) & 0x03FF)
 #define PTE_ADDR(pte)	((u_long)(pte)&~0xFFF)
 
 // page number field of address
+// 实页号 虚页号
 #define PPN(va)		(((u_long)(va))>>12)
 #define VPN(va)		PPN(va)
 
@@ -160,7 +163,7 @@ extern volatile Pde *vpd[];
 			panic("KADDR called with invalid pa %08lx", (u_long)pa);\
 		(pa) + ULIM;					\
 	})
-
+// assert 如果x不是0 则报警
 #define assert(x)	\
 	do {	if (!(x)) panic("assertion failed: %s", #x); } while (0)
 

@@ -184,7 +184,7 @@
                                         (elm)->field.le_prev;                           \
                 *(elm)->field.le_prev = LIST_NEXT((elm), field);                \
         } while (0)
-
+// 好处是在删除的时候可以用le_prev来直接更改上一项的前向指针，不需要将链表倒置
 /*
  * Tail queue definitions.
  */
@@ -199,6 +199,9 @@
                 struct type *tqe_next;  /* next element */                      \
                 struct type **tqe_prev; /* address of previous next element */  \
         }
+// tqe_last: 最后一个项的前向指针
 
 #endif  /* !_SYS_QUEUE_H_ */
+
+// 在elm中，一个指针指向下一项（前向指针），另一个指针指向上一个指针的前向指针。
 

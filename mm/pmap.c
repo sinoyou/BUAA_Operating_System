@@ -93,15 +93,21 @@ static Pte *boot_pgdir_walk(Pde *pgdir, u_long va, int create)
     /* Step 1: Get the corresponding page directory entry and page table. */
     /* Hint: Use KADDR and PTE_ADDR to get the page table from page directory
      * entry value. */
-
-
-    /* Step 2: If the corresponding page table is not exist and parameter `create`
+    
+	pgdir_entryp = &pgdir[PDX(va)];
+	/* Step 2: If the corresponding page table is not exist and parameter `create`
      * is set, create one. And set the correct permission bits for this new page
      * table. */
-
-
+	if(create==1 && (*pgdir_entryp & PTE_V)==0){
+		/*now create it*/
+		pgdir_entryp = PADDR(alloc(BY2PG, BY2PG, 1));
+		*pgdir_entryp = 1;
+	}
     /* Step 3: Get the page table entry for `va`, and return it. */
-
+	
+	pgtable = KADDR(PTE_ADDR(*pgdir_entryp));
+	pgtable_entry = &pgtable[PTX(va)]; 
+	return pgtable_entry;
 
 }
 
@@ -191,7 +197,7 @@ page_init(void)
     /* Step 4: Mark the other memory as free. */
 	for(;i<npage;i++){
 		pages[i].pp_ref = 0;
-		LIST_INSERT_HEAD(&page_free_list, &pages[i], pp_link);
+		LIST_INSERT_HEAD(&page_free_list, &pages[i], pp_link);		// pp_link--->field
 	}
 }
 
@@ -220,11 +226,12 @@ page_alloc(struct Page **pp)
 		return -E_NO_MEM;
 	} else {
 		ppage_temp = LIST_FIRST(&page_free_list);
-		LIST_REMOVE(ppage_temp, pp_link);	
+		LIST_REMOVE(ppage_temp, pp_link);	// field is pp_link
 	}
 
     /* Step 2: Initialize this page.
      * Hint: use `bzero`. */
+	// 清空指向的那一页，而非存储页面信息的结构体
 	bzero((void *)page2kva(ppage_temp), BY2PG);
 	*pp = ppage_temp;
 	return 0;
@@ -274,17 +281,24 @@ pgdir_walk(Pde *pgdir, u_long va, int create, Pte **ppte)
     struct Page *ppage;
 
     /* Step 1: Get the corresponding page directory entry and page table. */
-
+	pgdir_entryp = &pgdir[PDX(va)];
 
     /* Step 2: If the corresponding page table is not exist(valid) and parameter `create`
      * is set, create one. And set the correct permission bits for this new page
      * table.
      * When creating new page table, maybe out of memory. */
-
-
+	if(create==1 && (*pgdir_entryp & PTE_V)==0) {
+		/*NOW create it*/
+		if(page_alloc(&ppage)==-E_NO_MEM){
+			return -E_NO_MEM;
+		}
+		ppage->pp_ref ++;
+		*pgdir_entryp = PADDR((Pde)page2kva(ppage)|(PTE_V|PTE_R));
+	}
     /* Step 3: Set the page table entry to `*ppte` as return value. */
-
-
+	pgtable = (Pte*)KADDR(PTE_ADDR(*pgdir_entryp));
+	*ppte = &pgtable[PTX(va)];
+	/*review it again*/
     return 0;
 }
 
