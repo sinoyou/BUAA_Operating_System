@@ -99,9 +99,9 @@ static Pte *boot_pgdir_walk(Pde *pgdir, u_long va, int create)
      * table. */
 	if(create==1 && (*pgdir_entryp & PTE_V)==0){
 		/*now create it*/
-		pgdir_entryp = PADDR(alloc(BY2PG, BY2PG, 1));
+		*pgdir_entryp = PADDR(alloc(BY2PG, BY2PG, 1));
 	// 	*pgdir_entryp = 1;
-		pgdir_entryp = pgdir_entryp | PTE_V;
+		*pgdir_entryp = (*pgdir_entryp | PTE_V);
 	}
     /* Step 3: Get the page table entry for `va`, and return it. */
 	
