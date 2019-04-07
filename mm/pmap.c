@@ -99,7 +99,7 @@ static Pte *boot_pgdir_walk(Pde *pgdir, u_long va, int create)
      * table. */
 	if(create==1 && (*pgdir_entryp & PTE_V)==0){
 		/*now create it*/
-		*pgdir_entryp = PADDR(alloc(BY2PG, BY2PG, 1));
+		*pgdir_entryp = PADDR((Pde)alloc(BY2PG, BY2PG, 1));
 	// 	*pgdir_entryp = 1;
 		*pgdir_entryp = (*pgdir_entryp | PTE_V);
 	}
@@ -133,7 +133,8 @@ void boot_map_segment(Pde *pgdir, u_long va, u_long size, u_long pa, int perm)
 	for (i = 0; i < size / BY2PG ; i++) {
 		va_temp = va + i * BY2PG;
 		pgtable_entry = boot_pgdir_walk(pgdir, va_temp, 1);
-		*pgtable_entry = (pa + i * BY2PG) | perm | PTE_V;
+		*pgtable_entry = PTE_ADDR((pa + i * BY2PG)) | perm | PTE_V;
+		// why we need pte_addr
 	}
 }
 
@@ -294,12 +295,17 @@ pgdir_walk(Pde *pgdir, u_long va, int create, Pte **ppte)
 	if(create==1 && (*pgdir_entryp & PTE_V)==0) {
 		/*NOW create it*/
 		if(page_alloc(&ppage)==-E_NO_MEM){
+			*ppte = 0;
 			return -E_NO_MEM;
 		}
 		ppage->pp_ref ++;
 		*pgdir_entryp = PADDR((Pde)page2kva(ppage)|(PTE_V|PTE_R));
 	}
     /* Step 3: Set the page table entry to `*ppte` as return value. */
+	if((*pgdir_entryp)==0) {
+		*ppte = 0;
+		return 0;
+	}
 	pgtable = (Pte*)KADDR(PTE_ADDR(*pgdir_entryp));
 	*ppte = &pgtable[PTX(va)];
 	/*review it again*/
