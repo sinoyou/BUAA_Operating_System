@@ -21,6 +21,7 @@
 #define PDX(va)		((((u_long)(va))>>22) & 0x03FF)
 // 页表索引
 #define PTX(va)		((((u_long)(va))>>12) & 0x03FF)
+// 取高位地址，舍弃低12位
 #define PTE_ADDR(pte)	((u_long)(pte)&~0xFFF)
 
 // page number field of address
