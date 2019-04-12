@@ -343,7 +343,7 @@ void
 env_create_priority(u_char *binary, int size, int priority)
 {
     struct Env *e;
-	*e = 0;
+	
     /*Step 1: Use env_alloc to alloc a new env. */
 	int r;
 	r = env_alloc(&e, 0);
@@ -452,8 +452,8 @@ env_run(struct Env *e)
     *  context switch.You can imitate env_destroy() 's behaviors.*/
 	if(curenv != NULL) {
 		struct Trapframe * old;
-		old = (struct Trampframe *) (TIMESTACK - sizeof(struct Trampframe));
-		curenv->env_tf = old;
+		old = (struct Trapframe *) (TIMESTACK - sizeof(struct Trapframe));
+		curenv->env_tf = *old;
 		curenv->env_tf.pc = curenv->env_tf.cp0_epc;
 		// curenv->env_tf.pc = e->env_tf.cp0_epc;
 	}
