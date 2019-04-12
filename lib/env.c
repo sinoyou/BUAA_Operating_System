@@ -13,7 +13,7 @@ struct Env *envs = NULL;		// All environments
 struct Env *curenv = NULL;	        // the current env
 
 static struct Env_list env_free_list;	// Free list
-truct Env_list env_sched_list[2];      // Runnable list
+struct Env_list env_sched_list[2];      // Runnable list
 
 extern Pde *boot_pgdir;
 extern char *KERNEL_SP;
@@ -61,7 +61,7 @@ int envid2env(u_int envid, struct Env **penv, int checkperm)
     /* Hint:
  *      *  If envid is zero, return the current environment.*/
     /*Step 1: Assign value to e using envid. */
-		e = envs[ENVX(envid)]; 
+		e = & envs[ENVX(envid)]; 
 
 
         if (e->env_status == ENV_FREE || e->env_id != envid) {
@@ -77,8 +77,8 @@ int envid2env(u_int envid, struct Env **penv, int checkperm)
     /*Step 2: Make a check according to checkperm. */
 	if( checkperm==1 ) {
 		int flag = 0;
-		if(e->env_id == curenv->envid) flag = 1;
-		if(e->env_ipc_from == curenv->envid) flag = 1;
+		if(e->env_id == curenv->env_id) flag = 1;
+		if(e->env_ipc_from == curenv->env_id) flag = 1;
 
 		if(flag == 0) return -E_BAD_ENV;
 	}
@@ -102,7 +102,7 @@ env_init(void)
 	LIST_INIT(&env_free_list);
     /*Step 2: Travel the elements in 'envs', init every element(mainly initial its status, mark it as free)
      * and inserts them into the env_free_list as reverse order. */
-	for(i=0;envs[i]!=NULL;i++) {
+	for(i=NENV-1; i>=0 ;i-- ) {
 		envs[i].env_status = ENV_FREE;
 		LIST_INSERT_HEAD(&env_free_list, &envs[i], env_link);
 	}
@@ -133,7 +133,7 @@ env_setup_vm(struct Env *e)
                 return r;
         }
 
-	p->ref ++;
+	p->pp_ref ++;
 	pgdir = page2kva(p);
 	e->env_pgdir = pgdir;
 
@@ -199,10 +199,10 @@ env_alloc(struct Env **new, u_int parent_id)
     *new = 0;
 
     /*Step 1: Get a new Env from env_free_list*/
-	if(LIST_EMPTY(env_free_list)){
+	if(LIST_EMPTY(&env_free_list)){
 		return -E_NO_FREE_ENV;
 	} else {
-		e = LIST_FIRST(env_free_list);
+		e = LIST_FIRST(&env_free_list);
 	}
     
     /*Step 2: Call certain function(has been implemented) to init kernel memory layout for this new Env.
@@ -212,7 +212,7 @@ env_alloc(struct Env **new, u_int parent_id)
     /*Step 3: Initialize every field of new Env with appropriate values*/
 	e->env_parent_id = parent_id;
 	e->env_id = mkenvid(e);
-	e->env_status = ENV_RUNNABLE
+	e->env_status = ENV_RUNNABLE;
 
     /*Step 4: focus on initializing env_tf structure, located at this new Env. 
      * especially the sp register,CPU status. */
@@ -252,8 +252,8 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 	struct Page *p = NULL;
 	u_long i;
 	int r;
+	Pde * pgdir = env->env_pgdir;
 	u_long offset = va - ROUNDDOWN(va, BY2PG);
-	
 	u_long tempVa = ROUND(va, BY2PG);
 	// aligen i
 	if(offset > 0) {
@@ -272,7 +272,7 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 		page_insert(pgdir, p, tempVa, PTE_R);
 		bcopy(bin+i, page2kva(p), BY2PG);
 		tempVa = tempVa + BY2PG;
-		*p->pp_ref ++;		// if we need this
+		p->pp_ref ++;		// if we need this
 	}
 	// 这样会不会把一些没有用的东西也加载进去了呢？？？？
 	/*Step 2: alloc pages to reach `sgsize` when `bin_size` < `sgsize`.
@@ -469,7 +469,7 @@ env_run(struct Env *e)
      * the   environment.
      */
     /* Hint: You should use GET_ENV_ASID there.Think why? */
-	env_pop_tf(&(env_tf), GET_ENV_ASID(curenv->env_id));	
+	env_pop_tf(&(curenv->env_tf), GET_ENV_ASID(curenv->env_id));	
 	
 }
 void env_check()
