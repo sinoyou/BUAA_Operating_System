@@ -49,23 +49,23 @@ u_int mkenvid(struct Env *e)
  *
  * Post-Condition:
  *  return 0 on success,and sets *penv to the environment.
- *  return -E_BAhD_ENV on error,and sets *penv to NULL.
+ *  return -E_BAD_ENV on error,and sets *penv to NULL.
  */
 int envid2env(u_int envid, struct Env **penv, int checkperm)
 {
         struct Env *e;
+		*penv = 0;
 		if(envid == 0){
 			*penv = curenv;
 			return 0;
 		} 
     /* Hint:
- *      *  If envid is zero, return the current environment.*/
+     *  If envid is zero, return the current environment.*/
     /*Step 1: Assign value to e using envid. */
 		e = & envs[ENVX(envid)]; 
 
 
         if (e->env_status == ENV_FREE || e->env_id != envid) {
-                *penv = 0;
                 return -E_BAD_ENV;
         }
     /* Hint:
@@ -77,9 +77,8 @@ int envid2env(u_int envid, struct Env **penv, int checkperm)
     /*Step 2: Make a check according to checkperm. */
 	if( checkperm==1 ) {
 		int flag = 0;
-		if(e == curenv) flag = 1;
-		if(e->env_parent_id == curenv->env_id) flag = 1;
-		*penv = 0;
+		if(e == curenv) flag = 1;		// the current environment
+		if(e->env_parent_id == curenv->env_id) flag = 1;  // immediate child of curenv
 		if(flag == 0) return -E_BAD_ENV;
 	}
         *penv = e;
@@ -135,11 +134,10 @@ env_setup_vm(struct Env *e)
 
 	p->pp_ref ++;
 	pgdir = page2kva(p);
-	// e->env_pgdir = pgdir;
 
     /*Step 2: Zero pgdir's field before UTOP. */
 	
-	// bzero(pgdir, sizeof(Pde)*PDX(UTOP));
+	// bzero(pgdir,sizeof(Pde)*PDX(UTOP));
 
 	for(i=0;i<PDX(UTOP);i++) {
 		pgdir[i] = 0;
@@ -155,7 +153,7 @@ env_setup_vm(struct Env *e)
      */
 
 	/*Q: Why should we do this here?*/
-	for(; i <= PDX(0xffffffff); i++ ){
+	for(; i <=1024; i++ ){
 		pgdir[i] = boot_pgdir[i];
 	}
 
