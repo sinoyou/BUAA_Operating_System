@@ -49,7 +49,7 @@ u_int mkenvid(struct Env *e)
  *
  * Post-Condition:
  *  return 0 on success,and sets *penv to the environment.
- *  return -E_BAD_ENV on error,and sets *penv to NULL.
+ *  return -E_BAhD_ENV on error,and sets *penv to NULL.
  */
 int envid2env(u_int envid, struct Env **penv, int checkperm)
 {
@@ -155,7 +155,7 @@ env_setup_vm(struct Env *e)
      */
 
 	/*Q: Why should we do this here?*/
-	for(; i <= PDX(~0); i++ ){
+	for(; i <= PDX(0xffffffff); i++ ){
 		pgdir[i] = boot_pgdir[i];
 	}
 
