@@ -79,7 +79,7 @@ int envid2env(u_int envid, struct Env **penv, int checkperm)
 		int flag = 0;
 		if(e == curenv) flag = 1;
 		if(e->env_parent_id == curenv->env_id) flag = 1;
-
+		*penv = 0;
 		if(flag == 0) return -E_BAD_ENV;
 	}
         *penv = e;
@@ -155,7 +155,7 @@ env_setup_vm(struct Env *e)
      */
 
 	/*Q: Why should we do this here?*/
-	for(; i < PDX(0x11111111); i++ ){
+	for(; i <= PDX(~0); i++ ){
 		pgdir[i] = boot_pgdir[i];
 	}
 
@@ -173,13 +173,13 @@ env_setup_vm(struct Env *e)
 
 /* Overview:
  *  Allocates and Initializes a new environment.
- *  On success, the new environment is stored in *new.
+ *  On success, the nhhew environment is stored in *new.
  *
  * Pre-Condition:
  *  If the new Env doesn't have parent, parent_id should be zero.
  *  env_init has been called before this function.
  *
- * Post-Condition:
+ * Post-Condition:h
  *  return 0 on success, and set appropriate values for Env new.
  *  return -E_NO_FREE_ENV on error, if no free env.
  *
@@ -532,7 +532,7 @@ void env_check()
 	printf("pe1->env_pgdir %x\n",pe1->env_pgdir);
         printf("pe1->env_cr3 %x\n",pe1->env_cr3);
 
-        assert(pe2->env_pgdir[PDX(UTOP)] == boot_pgdir[PDX(UTOP)]);
+        assert(pe2->env_pgdir[PDX(UTOP)] == boot_pgdir[PDX(UTOP)]);   // 这里是怎么测试的？
         assert(pe2->env_pgdir[PDX(UTOP)-1] == 0);
         printf("env_setup_vm passed!\n");
 
