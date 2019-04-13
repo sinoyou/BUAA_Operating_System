@@ -77,8 +77,8 @@ int envid2env(u_int envid, struct Env **penv, int checkperm)
     /*Step 2: Make a check according to checkperm. */
 	if( checkperm==1 ) {
 		int flag = 0;
-		if(e->env_id == curenv->env_id) flag = 1;
-		if(e->env_ipc_from == curenv->env_id) flag = 1;
+		if(e == curenv) flag = 1;
+		if(e->env_parent_id == curenv->env_id) flag = 1;
 
 		if(flag == 0) return -E_BAD_ENV;
 	}
