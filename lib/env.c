@@ -137,8 +137,6 @@ env_setup_vm(struct Env *e)
 
     /*Step 2: Zero pgdir's field before UTOP. */
 	
-	// bzero(pgdir,sizeof(Pde)*PDX(UTOP));
-
 	for(i=0;i<PDX(UTOP);i++) {
 		pgdir[i] = 0;
 	}
@@ -160,12 +158,12 @@ env_setup_vm(struct Env *e)
     /*Step 4: Set e->env_pgdir and e->env_cr3 accordingly. */
 	e->env_pgdir = pgdir;
 
-	e->env_cr3 = PADDR(pgdir); // what is in cr3???
+	e->env_cr3 = PADDR(pgdir); // cr3: pa of pgdir
 
     /*VPT and UVPT map the env's own page table, with
  *      *different permissions. */
-	e->env_pgdir[PDX(VPT)]   = e->env_cr3;
-    e->env_pgdir[PDX(UVPT)]  = e->env_cr3 | PTE_V | PTE_R;
+	e->env_pgdir[PDX(VPT)]   = e->env_cr3;					// virtual page table : only kernel
+    e->env_pgdir[PDX(UVPT)]  = e->env_cr3 | PTE_V | PTE_R;		// User virtual page table : User can get 
 	return 0;
 }
 
@@ -215,10 +213,7 @@ env_alloc(struct Env **new, u_int parent_id)
     /*Step 4: focus on initializing env_tf structure, located at this new Env. 
      * especially the sp register,CPU status. */
     e->env_tf.cp0_status = 0x10001004;
-	// What should we do here ??
-	//	e->env_tf.regs[29] = e->env_tf.regs[29] << 2;
 	e->env_tf.regs[29] = USTACKTOP ;
-	// What is USTACKTOP
 
     /*Step 5: Remove the new Env from Env free list*/
 	LIST_REMOVE(e, env_link);
@@ -263,7 +258,7 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 	}
 
 	/*Step 1: load all content of bin into memory. */
-	for (i = 0; i < bin_size; i += BY2PG) {
+	for ( ; i+BY2PG <= bin_size; i += BY2PG) {
 		/* Hint: You should alloc a page and increase the reference count of it. */
 		r = page_alloc(&p);
 		if(r<0) return r;
@@ -271,6 +266,15 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 		bcopy(bin+i, page2kva(p), BY2PG);
 		tempVa = tempVa + BY2PG;
 		// p->pp_ref ++;		// if we need this
+	}
+	if(i<bin_size) {
+		r = page_alloc(&p);
+		if(r<0) return r;
+		page_insert(pgdir, p, tempVa, PTE_R);
+		bcopy(bin+i, page2kva(p), bin_size-i);
+		i = i + BY2PG;
+		bzero(page2kva(p)+i-bin_size, i-bin_size);
+		tempVa = tempVa + BY2PG;
 	}
 	// 这样会不会把一些没有用的东西也加载进去了呢？？？？
 	/*Step 2: alloc pages to reach `sgsize` when `bin_size` < `sgsize`.
