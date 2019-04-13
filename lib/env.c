@@ -57,7 +57,7 @@ int envid2env(u_int envid, struct Env **penv, int checkperm)
 		if(envid == 0){
 			*penv = curenv;
 			return 0;
-		}
+		} 
     /* Hint:
  *      *  If envid is zero, return the current environment.*/
     /*Step 1: Assign value to e using envid. */
