@@ -135,7 +135,7 @@ env_setup_vm(struct Env *e)
 
 	p->pp_ref ++;
 	pgdir = page2kva(p);
-	e->env_pgdir = pgdir;
+	// e->env_pgdir = pgdir;
 
     /*Step 2: Zero pgdir's field before UTOP. */
 	
@@ -167,7 +167,7 @@ env_setup_vm(struct Env *e)
     /*VPT and UVPT map the env's own page table, with
  *      *different permissions. */
 	e->env_pgdir[PDX(VPT)]   = e->env_cr3;
-    	e->env_pgdir[PDX(UVPT)]  = e->env_cr3 | PTE_V | PTE_R;
+    e->env_pgdir[PDX(UVPT)]  = e->env_cr3 | PTE_V | PTE_R;
 	return 0;
 }
 
@@ -218,7 +218,7 @@ env_alloc(struct Env **new, u_int parent_id)
      * especially the sp register,CPU status. */
     e->env_tf.cp0_status = 0x10001004;
 	// What should we do here ??
-	e->env_tf.regs[29] = e->env_tf.regs[29] << 2;
+	//	e->env_tf.regs[29] = e->env_tf.regs[29] << 2;
 	e->env_tf.regs[29] = USTACKTOP ;
 	// What is USTACKTOP
 
@@ -259,7 +259,7 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 	if(offset > 0) {
 		r = page_alloc(&p);
 		if(r<0) return r;			// is this need ?
-		page_insert(pgdir, p, tempVa, PTE_R);
+		page_insert(pgdir, p, va, PTE_R);
 		bcopy(bin, page2kva(p)+offset, BY2PG-offset);
 		i = BY2PG-offset;
 	}
@@ -269,10 +269,10 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 		/* Hint: You should alloc a page and increase the reference count of it. */
 		r = page_alloc(&p);
 		if(r<0) return r;
-		page_insert(pgdir, p, tempVa, PTE_R);
+		page_insert(pgdir, p, tempVa, PTE_R);	// reference increase here??
 		bcopy(bin+i, page2kva(p), BY2PG);
 		tempVa = tempVa + BY2PG;
-		p->pp_ref ++;		// if we need this
+		// p->pp_ref ++;		// if we need this
 	}
 	// 这样会不会把一些没有用的东西也加载进去了呢？？？？
 	/*Step 2: alloc pages to reach `sgsize` when `bin_size` < `sgsize`.
@@ -280,8 +280,9 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 	while (i < sgsize) {
 		page_alloc(&p);
 		page_insert(pgdir, p, tempVa, PTE_R);
-		bzero(bin+i, BY2PG);
+		bzero(page2kva(p), BY2PG);
 		tempVa = tempVa + BY2PG;
+		i = i + BY2PG;
 	}
 	return 0;
 }
