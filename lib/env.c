@@ -136,10 +136,12 @@ env_setup_vm(struct Env *e)
 	pgdir = page2kva(p);
 
     /*Step 2: Zero pgdir's field before UTOP. */
-	
+
 	for(i=0;i<PDX(UTOP);i++) {
 		pgdir[i] = 0;
 	}
+
+	// 	bzero(pgdir, sizeof(Pde)*PDX(UTOP));
 
     /*Step 3: Copy kernel's boot_pgdir to pgdir. */
 
@@ -255,6 +257,7 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 		page_insert(pgdir, p, va, PTE_R);
 		bcopy(bin, page2kva(p)+offset, BY2PG-offset);
 		i = BY2PG-offset;
+		p->pp_ref ++;
 	}
 
 	/*Step 1: load all content of bin into memory. */
@@ -265,7 +268,7 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 		page_insert(pgdir, p, tempVa, PTE_R);	// reference increase here??
 		bcopy(bin+i, page2kva(p), BY2PG);
 		tempVa = tempVa + BY2PG;
-		// p->pp_ref ++;		// if we need this
+		p->pp_ref ++;		// if we need this
 	}
 	if(i<bin_size) {
 		r = page_alloc(&p);
@@ -275,6 +278,7 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 		i = i + BY2PG;
 		bzero(page2kva(p)+i-bin_size, i-bin_size);
 		tempVa = tempVa + BY2PG;
+		p->pp_ref ++;
 	}
 	// 这样会不会把一些没有用的东西也加载进去了呢？？？？
 	/*Step 2: alloc pages to reach `sgsize` when `bin_size` < `sgsize`.
@@ -285,6 +289,7 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 		bzero(page2kva(p), BY2PG);
 		tempVa = tempVa + BY2PG;
 		i = i + BY2PG;
+		p->pp_ref ++;
 	}
 	return 0;
 }
@@ -465,7 +470,7 @@ env_run(struct Env *e)
 	curenv = e;
 
     /*Step 3: Use lcontext() to switch to its address space. */
-	lcontext((u_long)curenv->env_pgdir);
+	lcontext((u_long)curenv->env_pgdir);		// load env_pgdir from mCONTEXT(a word save addr of pgdir)
 
     /*Step 4: Use env_pop_tf() to restore the environment's
      * environment   registers and drop into user mode in the
