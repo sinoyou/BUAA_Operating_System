@@ -11,5 +11,5 @@ if [ "$2"="" ]
 then
 	git push
 else 
-	git push origin $2:$2
+	git push -f origin $2:$2
 fi
