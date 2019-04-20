@@ -220,6 +220,7 @@ env_alloc(struct Env **new, u_int parent_id)
     /*Step 5: Remove the new Env from Env free list*/
 	LIST_REMOVE(e, env_link);
 	*new = e;
+	LIST_INSERT_HEAD(&env_sched_list[0], e, env_sched_link);
 	return 0;
 
 }

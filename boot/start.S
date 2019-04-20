@@ -60,6 +60,7 @@ KERNEL_STACK:
 
 
 			.text
+
 LEAF(_start)
 	
 	.set	mips2

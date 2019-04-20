@@ -666,7 +666,8 @@ void pageout(int va, int context)
     }
 
     if (va < 0x10000) {
-        panic("^^^^^^TOO LOW^^^^^^^^^");
+		// printf("[DEBUG] 0x%x\n",va);
+		panic("^^^^^^TOO LOW^^^^^^^^^");
     }
 
     if ((r = page_alloc(&p)) < 0) {
