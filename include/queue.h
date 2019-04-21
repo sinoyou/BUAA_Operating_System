@@ -115,7 +115,7 @@
 #define LIST_INSERT_AFTER(listelm, elm, field) do{		\
 		(elm)->field.le_next = (listelm)->field.le_next;		\
 		if((elm)->field.le_next!=NULL)							\
-			LIST_NEXT((elm), field)->field.le_prev = &LIST_NEXT((elm), field);	\	
+			LIST_NEXT((listelm), field)->field.le_prev = &LIST_NEXT((elm), field);	\	
 		(listelm)->field.le_next = (elm);						\
 		(elm)->field.le_prev = &LIST_NEXT((listelm), field);	\
 	} while (0)
@@ -165,7 +165,7 @@
 				LIST_FOREACH(((elm)->field.le_next),head,field)  			\
 					if(((elm)->field.le_next)->field.le_next==NULL) break;	\
 				((elm)->field.le_next)->field.le_next = elm;				\
-				(elm)->field.le_prev = (elm)->field.le_next;				\
+				(elm)->field.le_prev = &(((elm)->field.le_next)->field.le_next);				\
 				(elm)->field.le_next = NULL;								\
 			}																\
 		} while (0)

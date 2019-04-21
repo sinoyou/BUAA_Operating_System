@@ -13,9 +13,9 @@
  */
 void sched_yield(void)
 {
-	static time_counter = 0;
+	static int time_counter = 0;
 	static struct Env * cur = NULL;
-	static index = 0;
+	static int index = 0;
 	/*
 	while(1) {
 		if(LIST_FIRST(&env_sched_list[index])==NULL) {
@@ -39,6 +39,7 @@ void sched_yield(void)
 	while(time_counter == 0) {
 		if(LIST_FIRST(&env_sched_list[index]) == NULL) {
 			index = 1 - index;
+			// printf("[DEBUG] change index to %d\n", index);
 		}
 		cur = LIST_FIRST(&env_sched_list[index]);
 		time_counter = cur->env_pri;

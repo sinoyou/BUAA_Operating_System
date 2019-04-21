@@ -130,6 +130,7 @@ void boot_map_segment(Pde *pgdir, u_long va, u_long size, u_long pa, int perm)
     /* Step 1: Check if `size` is a multiple of BY2PG. */
 	if (size % BY2PG != 0){
 		panic("boot_map_segment size not align!\n");
+		return ;
 	}	
     /* Step 2: Map virtual address space to physical address. */
     /* Hint: Use `boot_pgdir_walk` to get the page table entry of virtual address `va`. */
@@ -137,7 +138,6 @@ void boot_map_segment(Pde *pgdir, u_long va, u_long size, u_long pa, int perm)
 		va_temp = va + i;
 		pgtable_entry = boot_pgdir_walk(pgdir, va_temp, 1);
 		*pgtable_entry = PTE_ADDR((pa + i)) | perm | PTE_V;
-		// why we need pte_addr
 	}
 }
 
@@ -303,7 +303,7 @@ pgdir_walk(Pde *pgdir, u_long va, int create, Pte **ppte)
 			return -E_NO_MEM;
 		}
 		ppage->pp_ref ++;
-		*pgdir_entryp = PADDR((Pde)page2kva(ppage)|(PTE_V|PTE_R));
+		*pgdir_entryp = page2pa(ppage)|(PTE_V|PTE_R);
 	}
     /* Step 3: Set the page table entry to `*ppte` as return value. */
 	if((*pgdir_entryp)==0) {
@@ -354,14 +354,14 @@ page_insert(Pde *pgdir, struct Page *pp, u_long va, u_int perm)
 
 
     /* Step 3: Do check, re-get page table entry to validate the insertion. */
-	if(pgdir_walk(pgdir, va, 1, &pgtable_entry)==-E_NO_MEM){		// set create flag to 1
+	if(pgdir_walk(pgdir, va, 1, &pgtable_entry) != 0){		// set create flag to 1
 		return -E_NO_MEM;
 	}
     /* Step 3.1 Check if the page can be insert, if can’t return -E_NO_MEM */
 	/* Step 3.2 Insert page and increment the pp_ref */
 	*pgtable_entry = page2pa(pp) | PERM;
 	pp->pp_ref++;
-
+	tlb_invalidate(pgdir, va);
     return 0;
 }
 
