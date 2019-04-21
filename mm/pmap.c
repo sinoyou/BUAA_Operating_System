@@ -97,11 +97,14 @@ static Pte *boot_pgdir_walk(Pde *pgdir, u_long va, int create)
 	/* Step 2: If the corresponding page table is not exist and parameter `create`
      * is set, create one. And set the correct permission bits for this new page
      * table. */
-	if(create==1 && (*pgdir_entryp & PTE_V)==0){
+	if((*pgdir_entryp & PTE_V)==0){
 		/*now create it*/
-		*pgdir_entryp = PADDR((Pde)alloc(BY2PG, BY2PG, 1));
-	// 	*pgdir_entryp = 1;
-		*pgdir_entryp = (*pgdir_entryp | PTE_V);
+		if(create == 1) {
+			*pgdir_entryp = PADDR((Pte *)alloc(BY2PG, BY2PG, 1));
+			*pgdir_entryp = (*pgdir_entryp | PTE_V);
+		} else {
+			return NULL;
+		}
 	}
     /* Step 3: Get the page table entry for `va`, and return it. */
 	
@@ -130,10 +133,10 @@ void boot_map_segment(Pde *pgdir, u_long va, u_long size, u_long pa, int perm)
 	}	
     /* Step 2: Map virtual address space to physical address. */
     /* Hint: Use `boot_pgdir_walk` to get the page table entry of virtual address `va`. */
-	for (i = 0; i < size / BY2PG ; i++) {
-		va_temp = va + i * BY2PG;
+	for (i = 0; i < size ; i = i + BY2PG) {
+		va_temp = va + i;
 		pgtable_entry = boot_pgdir_walk(pgdir, va_temp, 1);
-		*pgtable_entry = PTE_ADDR((pa + i * BY2PG)) | perm | PTE_V;
+		*pgtable_entry = PTE_ADDR((pa + i)) | perm | PTE_V;
 		// why we need pte_addr
 	}
 }

@@ -15,7 +15,8 @@ void sched_yield(void)
 {
 	static time_counter = 0;
 	static struct Env * cur = NULL;
-	static int index = 0;
+	static index = 0;
+	/*
 	while(1) {
 		if(LIST_FIRST(&env_sched_list[index])==NULL) {
 			index = 1 - index;
@@ -33,5 +34,17 @@ void sched_yield(void)
 			break;
 		}
 	}
+	env_run(cur);
+	*/
+	while(time_counter == 0) {
+		if(LIST_FIRST(&env_sched_list[index]) == NULL) {
+			index = 1 - index;
+		}
+		cur = LIST_FIRST(&env_sched_list[index]);
+		time_counter = cur->env_pri;
+		LIST_REMOVE(cur, env_sched_link);
+		LIST_INSERT_HEAD(&env_sched_list[1-index], cur, env_sched_link);
+	}
+	time_counter--;
 	env_run(cur);
 }

@@ -220,6 +220,7 @@ env_alloc(struct Env **new, u_int parent_id)
     /*Step 5: Remove the new Env from Env free list*/
 	LIST_REMOVE(e, env_link);
 	*new = e;
+	e->env_status = ENV_RUNNABLE;
 	LIST_INSERT_HEAD(&env_sched_list[0], e, env_sched_link);
 	return 0;
 
@@ -258,7 +259,7 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 		page_insert(pgdir, p, va, PTE_R);
 		bcopy(bin, page2kva(p)+offset, BY2PG-offset);
 		i = BY2PG-offset;
-		p->pp_ref ++;
+		// p->pp_ref ++;
 	}
 
 	/*Step 1: load all content of bin into memory. */
@@ -269,7 +270,7 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 		page_insert(pgdir, p, tempVa, PTE_R);	// reference increase here??
 		bcopy(bin+i, page2kva(p), BY2PG);
 		tempVa = tempVa + BY2PG;
-		p->pp_ref ++;		// if we need this
+		// p->pp_ref ++;		// if we need this
 	}
 	if(i<bin_size) {
 		r = page_alloc(&p);
@@ -279,7 +280,7 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 		i = i + BY2PG;
 		bzero(page2kva(p)+i-bin_size, i-bin_size);
 		tempVa = tempVa + BY2PG;
-		p->pp_ref ++;
+		// p->pp_ref ++;
 	}
 	// 这样会不会把一些没有用的东西也加载进去了呢？？？？
 	/*Step 2: alloc pages to reach `sgsize` when `bin_size` < `sgsize`.
@@ -290,7 +291,7 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 		bzero(page2kva(p), BY2PG);
 		tempVa = tempVa + BY2PG;
 		i = i + BY2PG;
-		p->pp_ref ++;
+		// p->pp_ref ++;
 	}
 	return 0;
 }
@@ -322,7 +323,7 @@ load_icode(struct Env *e, u_char *binary, u_int size)
     
     /*Step 1: alloc a page. */
 	r = page_alloc(&p);
-	if(r<0) return ;
+	if(r != 0) return ;
 
     /*Step 2: Use appropriate perm to set initial stack for new Env. */
     /*Hint: The user-stack should be writable? */
@@ -331,7 +332,14 @@ load_icode(struct Env *e, u_char *binary, u_int size)
 	if (r != 0) return ;
 
     /*Step 3:load the binary by using elf loader. */
-	load_elf( binary, size, &entry_point, (void *)e, load_icode_mapper);
+	r = load_elf( binary, size, &entry_point, (void *)e, load_icode_mapper);
+	if(r!=0) {
+		panic("[DEBUG] wrong at load_elf\n");
+	}
+	
+	// e->env_status = ENV_RUNNABLE;
+	// LIST_INSERT_HEAD(env_sched_list, e, env_sched_link);
+
 	// Question: user_data 到底是什么嗯？
 
     /***Your Question Here***/
@@ -356,8 +364,11 @@ env_create_priority(u_char *binary, int size, int priority)
     /*Step 1: Use env_alloc to alloc a new env. */
 	int r;
 	r = env_alloc(&e, 0);
-	if(r != 0) return ;
-    /*Step 2: assign priority to the new env. */
+	if(r != 0){
+		printf("[DEBUG] here at env_creat, wrong at env_alloc\n");
+		return ;
+	}
+	/*Step 2: assign priority to the new env. */
 	e->env_pri = priority;
     /*Step 3: Use load_icode() to load the named elf binary. */
 	load_icode(e, binary, size);
@@ -459,20 +470,20 @@ env_run(struct Env *e)
 	/*Step 1: save register state of curenv. */
     /* Hint: if there is a environment running,you should do
     *  context switch.You can imitate env_destroy() 's behaviors.*/
-	if(curenv != NULL) {
+	if(curenv != NULL && curenv != e) {
 		struct Trapframe * old;
 		old = (struct Trapframe *) (TIMESTACK - sizeof(struct Trapframe));
 		curenv->env_tf = *old;
 		curenv->env_tf.pc = curenv->env_tf.cp0_epc;
 		// curenv->env_tf.pc = e->env_tf.cp0_epc;
 	}
-
     /*Step 2: Set 'curenv' to the new environment. */
 	curenv = e;
-
+	// curenv->env_status = ENV_RUNNABLE;
     /*Step 3: Use lcontext() to switch to its address space. */
 	lcontext((u_long)curenv->env_pgdir);		// load env_pgdir from mCONTEXT(a word save addr of pgdir)
 
+	printf("[DEBUG] env_run: curenv pri %d \n", curenv->env_pri);
     /*Step 4: Use env_pop_tf() to restore the environment's
      * environment   registers and drop into user mode in the
      * the   environment.
