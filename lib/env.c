@@ -202,7 +202,7 @@ env_alloc(struct Env **new, u_int parent_id)
     
     /*Step 2: Call certain function(has been implemented) to init kernel memory layout for this new Env.
      *The function mainly maps the kernel address to this new Env address. */
-	env_setup_vm(e);	
+	env_setup_vm(e);		// init the kernel mem layout and bzero the user mem layout
     /*Step 3: Initialize every field of new Env with appropriate values*/
 	e->env_id = mkenvid(e);
 	e->env_status = ENV_RUNNABLE;
@@ -478,9 +478,9 @@ env_run(struct Env *e)
     /* Hint: if there is a environment running,you should do
     *  context switch.You can imitate env_destroy() 's behaviors.*/
 	
-		struct Trapframe * old;
+	struct Trapframe * old;
 	
-		old = (struct Trapframe *) (TIMESTACK - sizeof(struct Trapframe));
+	old = (struct Trapframe *) (TIMESTACK - sizeof(struct Trapframe));
 	if(curenv) {
 		bcopy(old, &(curenv->env_tf), sizeof(struct Trapframe));
 		// curenv->env_tf = *old;
