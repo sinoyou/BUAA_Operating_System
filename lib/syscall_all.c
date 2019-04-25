@@ -63,6 +63,10 @@ u_int sys_getenvid(void)
  */
 void sys_yield(void)
 {
+	bcopy((void*)KERNEL_SP-sizeof(struct Trapframe),
+			(void*)TIMESTACK-sizeof(struct Trapframe),
+			sizeof(struct Trapframe));
+	sched_yield();
 }
 
 /* Overview:
@@ -140,11 +144,11 @@ int sys_mem_alloc(int sysno, u_int envid, u_int va, u_int perm)
 	struct Page *ppage;
 	int ret;
 	ret = 0;
-	if(va<0){
-		panic("[DEBUG] sys_mem_alloc: va should > 0\n");
-		return -1;
+	if(va >= UTOP){
+		panic("[DEBUG] sys_mem_alloc: va should < UTOP\n");
+		return -E_INVAL;
 	}
-	if(perm&PTE_COW > 0) {
+	if((perm&PTE_COW) > 0) {
 		panic("[DEBUG] sys_mem_alloc: PTE_COW cannot permit\n");
 		return -E_INVAL;
 	}
@@ -160,7 +164,11 @@ int sys_mem_alloc(int sysno, u_int envid, u_int va, u_int perm)
 		return ret;
 	}
 	ppage -> pp_ref ++;
-	page_insert(pgdir, ppage, va, perm);
+	ret = page_insert(pgdir, ppage, va, perm);
+	if(ret < 0) {
+		panic("[DEBUG] sys_mem_alloc: page_insert has wrong here\n");
+		return ret;
+	}
 	return 0;
 }
 
@@ -193,9 +201,13 @@ int sys_mem_map(int sysno, u_int srcid, u_int srcva, u_int dstid, u_int dstva,
 	round_srcva = ROUNDDOWN(srcva, BY2PG);
 	round_dstva = ROUNDDOWN(dstva, BY2PG);
 	
-	if(perm & PTE_COW > 0) {
+	if((perm & PTE_COW) > 0) {
 		panic("[DEBUG] sys_mem_map: perm has wrong here\n");
-		return -1;
+		return -E_INVAL;
+	}
+
+	if(dstva >= UTOP) {
+		return -E_INVAL;
 	}
 
     //your code here
@@ -212,9 +224,15 @@ int sys_mem_map(int sysno, u_int srcid, u_int srcva, u_int dstid, u_int dstva,
 	// how can we use sysno ?
 	
 	pgdir_walk(srcenv->env_pgdir, round_srcva, 0, &src_ppte);
+	// has some question here
 	pgdir_walk(dstenv->env_pgdir, round_dstva, 0, &dst_ppte);
 	
-	*dst_ppte = *src_ppte | perm;
+	if(dst_ppte!=NULL && src_ppte!=NULL && ((*dst_ppte)&PTE_R)==0 && ((perm & PTE_R) == 0)) {
+		panic("[DEBUG] sys_mem_map: try to change from nowrite to write");
+		return -E_INVAL;
+	}
+
+	*dst_ppte = *src_ppte | perm;		// maybe extend perm bit
 
 	return ret;
 }
@@ -234,18 +252,20 @@ int sys_mem_unmap(int sysno, u_int envid, u_int va)
 	int ret;
 	struct Env *env;
 	Pte *ppte;
+	
+	if(va >= UTOP) {
+		panic("[DEBUG] sys_mem_unmap: va >= UTOP\n");
+		return -E_INVAL;
+	}
 
 	ret = envid2env(envid, &env, 0);
 	if(ret < 0) {
 		panic("[DEBUG] sys_mem_unmap: envid2env-envid wrong here \n");
-		return -E_BAD-ENV;
+		return ret;
 	}
 	u_int round_va = ROUNDDOWN(va, BY2PG);
-	pgdir_walk(srcenv->env_pgdir, va, 0, &ppte);
-	if(ppte) {
-		// can we unmap this way ?
-		*ppte = 0;
-	}
+	
+	page_remove(env->env_pgdir, round_va);
 
 	return ret;
 	//	panic("sys_mem_unmap not implemented");
