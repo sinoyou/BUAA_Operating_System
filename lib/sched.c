@@ -16,7 +16,7 @@ void sched_yield(void)
 	static int time_counter = 0;
 	static struct Env * cur = NULL;
 	static int index = 0;
-	/*
+
 	while(1) {
 		if(LIST_FIRST(&env_sched_list[index])==NULL) {
 			index = 1 - index;
@@ -35,7 +35,7 @@ void sched_yield(void)
 		}
 	}
 	env_run(cur);
-	*/
+	
 	while(time_counter == 0) {
 		if(LIST_FIRST(&env_sched_list[index]) == NULL) {
 			index = 1 - index;

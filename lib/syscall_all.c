@@ -140,7 +140,28 @@ int sys_mem_alloc(int sysno, u_int envid, u_int va, u_int perm)
 	struct Page *ppage;
 	int ret;
 	ret = 0;
-
+	if(va<0){
+		panic("[DEBUG] sys_mem_alloc: va should > 0\n");
+		return -1;
+	}
+	if(perm&PTE_COW > 0) {
+		panic("[DEBUG] sys_mem_alloc: PTE_COW cannot permit\n");
+		return -E_INVAL;
+	}
+	ret = envid2env(envid, &env, 0);		// how to use checkperm?
+	if(ret < 0) {
+		panic("[DEBUG] sys_mem_alloc: envid2env has wrong here\n");
+		return ret;
+	}
+	Pde * pgdir = env->env_pgdir;
+	ret = page_alloc(&ppage);
+	if(ret < 0) {
+		panic("[DEBUG] sys_mem_alloc: page_alloc has wrong here\n");
+		return ret;
+	}
+	ppage -> pp_ref ++;
+	page_insert(pgdir, ppage, va, perm);
+	return 0;
 }
 
 /* Overview:
@@ -164,14 +185,36 @@ int sys_mem_map(int sysno, u_int srcid, u_int srcva, u_int dstid, u_int dstva,
 	struct Env *srcenv;
 	struct Env *dstenv;
 	struct Page *ppage;
-	Pte *ppte;
+	Pte *src_ppte;
+	Pte *dst_ppte;
 
 	ppage = NULL;
 	ret = 0;
 	round_srcva = ROUNDDOWN(srcva, BY2PG);
 	round_dstva = ROUNDDOWN(dstva, BY2PG);
+	
+	if(perm & PTE_COW > 0) {
+		panic("[DEBUG] sys_mem_map: perm has wrong here\n");
+		return -1;
+	}
 
     //your code here
+	ret = envid2env(srcid, &srcenv, 0);
+	if(ret<0) {
+		panic("[DEBUG] sys_mem_map: envid2env-srcid wrong here\n");
+		return -E_BAD_ENV;
+	}
+	ret = envid2env(dstid, &dstenv, 0);
+	if(ret < 0) {
+		panic("[DEBUG] sys_mem_map: envid2env-dstid wrong here\n");
+		return -E_BAD_ENV;
+	}
+	// how can we use sysno ?
+	
+	pgdir_walk(srcenv->env_pgdir, round_srcva, 0, &src_ppte);
+	pgdir_walk(dstenv->env_pgdir, round_dstva, 0, &dst_ppte);
+	
+	*dst_ppte = *src_ppte | perm;
 
 	return ret;
 }
@@ -190,6 +233,19 @@ int sys_mem_unmap(int sysno, u_int envid, u_int va)
 	// Your code here.
 	int ret;
 	struct Env *env;
+	Pte *ppte;
+
+	ret = envid2env(envid, &env, 0);
+	if(ret < 0) {
+		panic("[DEBUG] sys_mem_unmap: envid2env-envid wrong here \n");
+		return -E_BAD-ENV;
+	}
+	u_int round_va = ROUNDDOWN(va, BY2PG);
+	pgdir_walk(srcenv->env_pgdir, va, 0, &ppte);
+	if(ppte) {
+		// can we unmap this way ?
+		*ppte = 0;
+	}
 
 	return ret;
 	//	panic("sys_mem_unmap not implemented");
