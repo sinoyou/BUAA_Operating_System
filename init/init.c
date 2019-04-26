@@ -7,6 +7,7 @@
 
 extern char aoutcode[];
 extern char boutcode[];
+extern int debug_mode;
 
 void mips_init()
 {
@@ -19,13 +20,24 @@ void mips_init()
 	
 	env_init();
 	
-	ENV_CREATE(user_fktest);
+	if(debug_mode) printf("[DEBUG] before ENV_CREAT\n");
+
+	ENV_CREATE(user_test_code);
+
+	ENV_CREATE(user_test_code);
+	ENV_CREATE(user_test_code);
+	ENV_CREATE(user_test_code);
+	ENV_CREATE(user_test_code);
+	//	ENV_CREATE(user_fktest);
 	//ENV_CREATE(user_pingpong);
 	
+	if(debug_mode) printf("[DEBUG] ENV_CREATE OK\n");
+
+
     trap_init();
 	kclock_init();
 
-	
+	if(debug_mode) printf("[DEBUG] before while 1\n");	
 	while(1);
 	panic("init.c:\tend of mips_init() reached!");
 }
@@ -71,6 +83,8 @@ void bzero(void *b, size_t len)
 	while (b < max)
 	{
 		*(char *)b++ = 0;
-	}		
+	}
+
+	if(debug_mode) printf("[DEBUG] we are in bzero\n");
 	
 }

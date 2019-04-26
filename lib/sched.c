@@ -22,7 +22,12 @@ void sched_yield(void)
 		}
 		cur = LIST_FIRST(&env_sched_list[index]);
 		// time_counter = cur->env_pri;
-		if(debug_mode == 1) printf("[DEBUG] if env null: %d \n", cur==NULL);	
+		if(debug_mode) {
+			printf("[DEBUG] env: %d \n", cur!=NULL);	
+			printf("[DEBUG] env_pri: %d\n",cur->env_pri);
+			printf("[DEBUG] env_status:%d\n",cur->env_status == ENV_RUNNABLE);
+	
+		}
 		if(time_counter >= cur->env_pri || cur->env_status != ENV_RUNNABLE) {
 			time_counter = 0;
 			LIST_REMOVE(cur, env_sched_link);

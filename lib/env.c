@@ -295,6 +295,7 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 		bzero(page2kva(p), sgsize-i);
 		p->pp_ref++;
 	}
+	if(debug_mode) printf("[DEBUG] have load_elf\n");
 	return 0;
 }
 /* Overview:

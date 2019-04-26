@@ -164,7 +164,7 @@ int sys_mem_alloc(int sysno, u_int envid, u_int va, u_int perm)
 		if(debug_mode == 1) panic("[DEBUG] sys_mem_alloc: page_alloc has wrong here\n");
 		return ret;
 	}
-	ppage -> pp_ref ++;
+//	ppage -> pp_ref ++;
 	ret = page_insert(pgdir, ppage, va, perm);
 	if(ret < 0) {
 		if(debug_mode == 1) panic("[DEBUG] sys_mem_alloc: page_insert has wrong here\n");
