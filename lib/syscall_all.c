@@ -64,8 +64,8 @@ u_int sys_getenvid(void)
  */
 void sys_yield(void)
 {
-	bcopy((void*)KERNEL_SP-sizeof(struct Trapframe),
-			(void*)TIMESTACK-sizeof(struct Trapframe),
+	bcopy((void*)(KERNEL_SP - sizeof(struct Trapframe)),
+			(void*)(TIMESTACK - sizeof(struct Trapframe)),
 			sizeof(struct Trapframe));
 	sched_yield();
 }
@@ -149,7 +149,7 @@ int sys_mem_alloc(int sysno, u_int envid, u_int va, u_int perm)
 		if(debug_mode == 1)	panic("[DEBUG] sys_mem_alloc: va should < UTOP\n");
 		return -E_INVAL;
 	}
-	if((perm&PTE_COW) > 0) {
+	if((perm & PTE_COW) > 0) {
 		if(debug_mode == 1) panic("[DEBUG] sys_mem_alloc: PTE_COW cannot permit\n");
 		return -E_INVAL;
 	}
@@ -366,6 +366,13 @@ void sys_panic(int sysno, char *msg)
  */
 void sys_ipc_recv(int sysno, u_int dstva)
 {
+	if (dstva >= UTOP) {
+		if(debug_mode == 1) panic("[DEBUG] sys_ipc_recv: wrong dstva!\n");
+	}
+	curenv->env_status = ENV_NOT_RUNNABLE;
+	curenv->env_ipc_dstva = dstva;
+	curenv->env_ipc_recving = 1;
+	sched_yield();
 }
 
 /* Overview:
@@ -392,7 +399,27 @@ int sys_ipc_can_send(int sysno, u_int envid, u_int value, u_int srcva,
 	int r;
 	struct Env *e;
 	struct Page *p;
-
+	
+	r = envid2env(envid, &e, 0);
+	if(r < 0){
+		if(debug_mode == 1) panic("[DEBUG] sys_ipc_can_send: envid2env wrong!\n");
+		return r;
+	}
+	if(e->env_ipc_recving != 1) {
+		return -E_IPC_NOT_RECV;
+	}
+	e->env_ipc_recving = 0;
+	e->env_ipc_from = curenv->env_id;
+	e->env_ipc_value = value;
+	if(srcva != 0) {
+		r = sys_mem_map(sysno, curenv->env_id, srcva, e->env_id, e->env_ipc_dstva, perm);
+		if(r < 0){
+			if(debug_mode == 1) panic("[DEBUG] sys_ipc_mem_send: sys_mem_map wrong!\n");
+			return r;
+		}
+	}
+	e->env_ipc_perm = perm;
+	e->env_status = ENV_RUNNABLE; 
 	return 0;
 }
 
