@@ -207,8 +207,8 @@ int sys_mem_map(int sysno, u_int srcid, u_int srcva, u_int dstid, u_int dstva,
 		return -E_INVAL;
 	}
 
-	if(dstva >= UTOP) {
-		if(debug_mode == 1) panic("[DEBUG] sys_mem_map: dstva >= UTOP\n");
+	if(dstva >= UTOP || srcva >= UTOP) {
+		if(debug_mode == 1) panic("[DEBUG] sys_mem_map: va >= UTOP\n");
 		return -E_INVAL;
 	}
 
@@ -224,7 +224,11 @@ int sys_mem_map(int sysno, u_int srcid, u_int srcva, u_int dstid, u_int dstva,
 		return -E_BAD_ENV;
 	}
 	// how can we use sysno ?
-	
+	Pte * ppte;	
+	ppage = page_lookup(srcenv->env_pgdir, round_srcva, &ppte);
+	page_insert(dstenv->env_pgdir, ppage, round_dstva, perm);
+
+/*
 	pgdir_walk(srcenv->env_pgdir, round_srcva, 0, &src_ppte);
 	// has some question here
 	pgdir_walk(dstenv->env_pgdir, round_dstva, 0, &dst_ppte);
@@ -235,7 +239,7 @@ int sys_mem_map(int sysno, u_int srcid, u_int srcva, u_int dstid, u_int dstva,
 	}
 
 	*dst_ppte = *src_ppte | perm;		// maybe extend perm bit
-
+*/
 	return ret;
 }
 
