@@ -5,18 +5,23 @@
 #include "error.h"
 
 
+int debug_mode = 0;
 /* These variables are set by mips_detect_memory() */
 u_long maxpa;            /* Maximum physical address */
 u_long npage;            /* Amount of memory(in pages) */
 u_long basemem;          /* Amount of base memory(in bytes) */
 u_long extmem;           /* Amount of extended memory(in bytes) */
-
 Pde *boot_pgdir;
 
 struct Page *pages;
 static u_long freemem;
 
 static struct Page_list page_free_list;	/* Free list of physical pages */
+
+void set_debug()
+{
+	debug_mode = 1;
+}
 
 
 /* Overview:
@@ -387,9 +392,7 @@ page_lookup(Pde *pgdir, u_long va, Pte **ppte)
     if ((*pte & PTE_V) == 0) {
         return 0;    //the page is not in memory.
     }
-
     /* Step 2: Get the corresponding Page struct. */
-
     /* Hint: Use function `pa2page`, defined in include/pmap.h . */
     ppage = pa2page(*pte);
     if (ppte) {
@@ -464,9 +467,6 @@ physical_memory_manage_check(void)
     assert(pp0);
     assert(pp1 && pp1 != pp0);
     assert(pp2 && pp2 != pp1 && pp2 != pp0);
-
-
-
     // temporarily steal the rest of the free pages
     fl = page_free_list;
     // now this page_free list must be empty!!!!
@@ -537,9 +537,7 @@ physical_memory_manage_check(void)
 			assert(p->pp_ref==answer2[j++]);
 			p=LIST_NEXT(p,pp_link);
 	}
-
-
-   
+  
     printf("physical_memory_manage_check() succeeded\n");
 }
 
@@ -669,7 +667,7 @@ void pageout(int va, int context)
     }
 
     if (va < 0x10000) {
-		// printf("[DEBUG] 0x%x\n",va);
+		if(debug_mode ==1) printf("[DEBUG] 0x%x\n",va);
 		panic("^^^^^^TOO LOW^^^^^^^^^");
     }
 

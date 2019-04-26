@@ -17,7 +17,7 @@ struct Env_list env_sched_list[2];      // Runnable list
 
 extern Pde *boot_pgdir;
 extern char *KERNEL_SP;
-
+extern int debug_mode;
 
 /* Overview:
  *  This function is for making an unique ID for every env.
@@ -326,7 +326,7 @@ load_icode(struct Env *e, u_char *binary, u_int size)
     /*Step 1: alloc a page. */
 	r = page_alloc(&p);
 	if(r != 0){
-		panic("[DEBUG] at load_icode func: page_alloc\n");
+		if(debug_mode==1) panic("[DEBUG] at load_icode func: page_alloc\n");
 		return ;
 	}
 
@@ -335,14 +335,14 @@ load_icode(struct Env *e, u_char *binary, u_int size)
 	perm = PTE_V | PTE_R;
 	r = page_insert(e->env_pgdir, p, USTACKTOP - BY2PG , perm);
 	if (r != 0) {
-		panic("[DEBUG] at load_icode func: page_insert\n");
+		if(debug_mode == 1)	panic("[DEBUG] at load_icode func: page_insert\n");
 		return;
 	}
 
     /*Step 3:load the binary by using elf loader. */
 	r = load_elf( binary, size, &entry_point, (void *)e, load_icode_mapper);
 	if(r!=0) {
-		panic("[DEBUG] wrong at load_elf\n");
+		if(debug_mode == 1)	panic("[DEBUG] wrong at load_elf\n");
 	}
 	
 	// e->env_status = ENV_RUNNABLE;
@@ -372,7 +372,7 @@ env_create_priority(u_char *binary, int size, int priority)
 	int r;
 		r = env_alloc(&e, 0);
 	if(r != 0){
-		printf("[DEBUG] here at env_creat, wrong at env_alloc\n");
+		if(debug_mode == 1)	printf("[DEBUG] here at env_creat, wrong at env_alloc\n");
 		return ;
 	}
 	/*Step 2: assign priority to the new env. */
@@ -556,7 +556,7 @@ void env_check()
         printf("envid2env() work well!\n");
 
 	/* check env_setup_vm() work well */
-	printf("pe1->env_pgdir %x\n",pe1->env_pgdir);
+		printf("pe1->env_pgdir %x\n",pe1->env_pgdir);
         printf("pe1->env_cr3 %x\n",pe1->env_cr3);
 
         assert(pe2->env_pgdir[PDX(UTOP)] == boot_pgdir[PDX(UTOP)]);   // 这里是怎么测试的？

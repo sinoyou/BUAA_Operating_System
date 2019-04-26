@@ -1,7 +1,7 @@
 #include <env.h>
 #include <pmap.h>
 #include <printf.h>
-
+extern int debug_mode;
 /* Overview:
  *  Implement simple round-robin scheduling.
  *  Search through 'envs' for a runnable environment ,
@@ -22,7 +22,7 @@ void sched_yield(void)
 		}
 		cur = LIST_FIRST(&env_sched_list[index]);
 		// time_counter = cur->env_pri;
-		// printf("[DEBUG] if env null: %d \n", cur==NULL);	
+		if(debug_mode == 1) printf("[DEBUG] if env null: %d \n", cur==NULL);	
 		if(time_counter >= cur->env_pri) {
 			time_counter = 0;
 			LIST_REMOVE(cur, env_sched_link);
