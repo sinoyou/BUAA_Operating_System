@@ -34,17 +34,12 @@ NESTED(handle_sys,TF_SIZE, sp)
     // TODO: Allocate a space of six arguments on current kernel stack and copy the six arguments to proper location
 	addiu sp, sp,-24
 	sw a0, 0(sp)
-	sw t0, 4(sp)
-	sw t1, 8(sp)
-	sw t2, 10(sp)
+	sw a1, 4(sp)
+	sw a2, 8(sp)
+	sw a3, 10(sp)
 	sw t3, 16(sp)
 	sw t4, 20(sp)
 	
-	// set the 0-3 arguments to $a0-$a3	
-	move a1, t0
-	move a2, t1
-	move a3, t2
-
     jalr    t2                          // Invoke sys_* function
     nop
     
