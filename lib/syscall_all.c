@@ -294,6 +294,17 @@ int sys_env_alloc(void)
 	int r;
 	struct Env *e;
 
+	r = env_alloc(&e, curenv->env_id);		// alloc the child env
+	if(r < 0) {
+		if(debug_mode) panic("[DEBUG] sys_env_alloc: env_alloc has wrong\n");
+		return r;
+	}
+	// copy the Trapframe
+	bcopy( (void*)(&(curenv->env_tf)), (void*)(&(e->env_tf)), sizeof(struct Trapframe));	// src dst len
+	
+	e->env_tf.pc = e->env_tf.cp0_epc;
+	e->env_tf.regs[2] = 0;
+	e->env_status = ENV_NOT_RUNNABLE;
 
 	return e->env_id;
 	//	panic("sys_env_alloc not implemented");
@@ -375,7 +386,8 @@ void sys_ipc_recv(int sysno, u_int dstva)
 	curenv->env_status = ENV_NOT_RUNNABLE;
 	curenv->env_ipc_dstva = dstva;
 	curenv->env_ipc_recving = 1;
-	sched_yield();
+	// sched_yield();
+	sys_yield();
 }
 
 /* Overview:

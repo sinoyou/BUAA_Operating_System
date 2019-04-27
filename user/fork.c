@@ -115,7 +115,18 @@ duppage(u_int envid, u_int pn)
 {
 	u_int addr;
 	u_int perm;
+	
+	
+	// vpd -> pde[]
+	// vpt -> pte[]
+	Pte * ppte = vpt[pn];
+	perm = *ppte & 0xfff;
 
+	
+	
+	
+	
+	
 	//	user_panic("duppage not implemented");
 }
 
@@ -138,12 +149,20 @@ fork(void)
 	extern struct Env *env;
 	u_int i;
 
-
 	//The parent installs pgfault using set_pgfault_handler
 
 	//alloc a new alloc
 
+	newenvid = syscall_env_alloc();			// sys or syscall 我们用的时候是不是都用的是syscall
+	
+	if(newenvid == 0) {
+		// child 
+		env = &envs[ENVX(syscall_getenvid())];
+	} else {
+		// father
 
+
+	}
 	return newenvid;
 }
 
