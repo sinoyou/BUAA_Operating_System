@@ -146,28 +146,28 @@ int sys_mem_alloc(int sysno, u_int envid, u_int va, u_int perm)
 	int ret;
 	ret = 0;
 	if(va >= UTOP){
-		if(debug_mode == 1)	panic("[DEBUG] sys_mem_alloc: va should < UTOP\n");
+		if(debug_mode)	panic("[DEBUG] sys_mem_alloc: va should < UTOP\n");
 		return -E_INVAL;
 	}
 	if((perm & PTE_COW) > 0) {
-		if(debug_mode == 1) panic("[DEBUG] sys_mem_alloc: PTE_COW cannot permit\n");
+		if(debug_mode) panic("[DEBUG] sys_mem_alloc: PTE_COW cannot permit\n");
 		return -E_INVAL;
 	}
 	ret = envid2env(envid, &env, 0);		// how to use checkperm?
 	if(ret < 0) {
-		if(debug_mode == 1) panic("[DEBUG] sys_mem_alloc: envid2env has wrong here\n");
+		if(debug_mode) panic("[DEBUG] sys_mem_alloc: envid2env has wrong here\n");
 		return ret;
 	}
 	Pde * pgdir = env->env_pgdir;
 	ret = page_alloc(&ppage);
 	if(ret < 0) {
-		if(debug_mode == 1) panic("[DEBUG] sys_mem_alloc: page_alloc has wrong here\n");
+		if(debug_mode) panic("[DEBUG] sys_mem_alloc: page_alloc has wrong here\n");
 		return ret;
 	}
 //	ppage -> pp_ref ++;
 	ret = page_insert(pgdir, ppage, va, perm);
 	if(ret < 0) {
-		if(debug_mode == 1) panic("[DEBUG] sys_mem_alloc: page_insert has wrong here\n");
+		if(debug_mode) panic("[DEBUG] sys_mem_alloc: page_insert has wrong here\n");
 		return ret;
 	}
 	return 0;
@@ -203,43 +203,42 @@ int sys_mem_map(int sysno, u_int srcid, u_int srcva, u_int dstid, u_int dstva,
 	round_dstva = ROUNDDOWN(dstva, BY2PG);
 	
 	if((perm & PTE_COW) > 0) {
-		if(debug_mode == 1) panic("[DEBUG] sys_mem_map: perm has wrong here\n");
+		if(debug_mode) panic("[DEBUG] sys_mem_map: perm has wrong here\n");
 		return -E_INVAL;
 	}
 
 	if(dstva >= UTOP || srcva >= UTOP) {
-		if(debug_mode == 1) panic("[DEBUG] sys_mem_map: va >= UTOP\n");
+		if(debug_mode) panic("[DEBUG] sys_mem_map: va >= UTOP\n");
 		return -E_INVAL;
 	}
 
     //your code here
 	ret = envid2env(srcid, &srcenv, 0);
 	if(ret<0) {
-		if(debug_mode == 1) panic("[DEBUG] sys_mem_map: envid2env-srcid wrong here\n");
+		if(debug_mode) panic("[DEBUG] sys_mem_map: envid2env-srcid wrong here\n");
 		return -E_BAD_ENV;
 	}
 	ret = envid2env(dstid, &dstenv, 0);
 	if(ret < 0) {
-		if(debug_mode == 1) panic("[DEBUG] sys_mem_map: envid2env-dstid wrong here\n");
+		if(debug_mode) panic("[DEBUG] sys_mem_map: envid2env-dstid wrong here\n");
 		return -E_BAD_ENV;
 	}
-	// how can we use sysno ?
+	
+	page_walk(srcenv->env_pgdir, round_srcva, 0, &src_ppte);
+	if(src_ppte!=NULL){
+		if((*src_ppte & PTE_R)==0 && (perm & PTE_R)!=0) {
+			if(debug_mode) panic("[DEBUG] sys_mem_map: try to from PTE_R==0 TO PTE_R!=0\n");
+			return -E_INVAL;
+		}
+	} 
 	Pte * ppte;	
 	ppage = page_lookup(srcenv->env_pgdir, round_srcva, &ppte);
-	page_insert(dstenv->env_pgdir, ppage, round_dstva, perm);
-
-/*
-	pgdir_walk(srcenv->env_pgdir, round_srcva, 0, &src_ppte);
-	// has some question here
-	pgdir_walk(dstenv->env_pgdir, round_dstva, 0, &dst_ppte);
-	
-	if(dst_ppte!=NULL && src_ppte!=NULL && ((*dst_ppte)&PTE_R)==0 && ((perm & PTE_R) == 0)) {
-		if(debug_mode == 1) panic("[DEBUG] sys_mem_map: try to change from nowrite to write");
-		return -E_INVAL;
+	ret = page_insert(dstenv->env_pgdir, ppage, round_dstva, perm);
+	if(ret < 0) {
+		if(debug_mode) panic("[DBEUG] sys_mem_map: page_insert error here\n");
+		return ret;
 	}
 
-	*dst_ppte = *src_ppte | perm;		// maybe extend perm bit
-*/
 	return ret;
 }
 
@@ -260,18 +259,18 @@ int sys_mem_unmap(int sysno, u_int envid, u_int va)
 	Pte *ppte;
 	
 	if(va >= UTOP) {
-		if(debug_mode == 1) panic("[DEBUG] sys_mem_unmap: va >= UTOP\n");
+		if(debug_mode) panic("[DEBUG] sys_mem_unmap: va >= UTOP\n");
 		return -E_INVAL;
 	}
 
 	ret = envid2env(envid, &env, 0);
 	if(ret < 0) {
-		if(debug_mode == 1) panic("[DEBUG] sys_mem_unmap: envid2env-envid wrong here \n");
+		if(debug_mode) panic("[DEBUG] sys_mem_unmap: envid2env-envid wrong here \n");
 		return ret;
 	}
-	u_int round_va = ROUNDDOWN(va, BY2PG);
+	// u_int round_va = ROUNDDOWN(va, BY2PG);
 	
-	page_remove(env->env_pgdir, round_va);
+	page_remove(env->env_pgdir, va);
 
 	return ret;
 	//	panic("sys_mem_unmap not implemented");
@@ -371,7 +370,7 @@ void sys_panic(int sysno, char *msg)
 void sys_ipc_recv(int sysno, u_int dstva)
 {
 	if (dstva >= UTOP) {
-		if(debug_mode == 1) panic("[DEBUG] sys_ipc_recv: wrong dstva!\n");
+		if(debug_mode) panic("[DEBUG] sys_ipc_recv: wrong dstva!\n");
 	}
 	curenv->env_status = ENV_NOT_RUNNABLE;
 	curenv->env_ipc_dstva = dstva;
@@ -406,7 +405,7 @@ int sys_ipc_can_send(int sysno, u_int envid, u_int value, u_int srcva,
 	
 	r = envid2env(envid, &e, 0);
 	if(r < 0){
-		if(debug_mode == 1) panic("[DEBUG] sys_ipc_can_send: envid2env wrong!\n");
+		if(debug_mode) panic("[DEBUG] sys_ipc_can_send: envid2env wrong!\n");
 		return r;
 	}
 	if(e->env_ipc_recving != 1) {
@@ -418,7 +417,7 @@ int sys_ipc_can_send(int sysno, u_int envid, u_int value, u_int srcva,
 	if(srcva != 0) {
 		r = sys_mem_map(sysno, curenv->env_id, srcva, e->env_id, e->env_ipc_dstva, perm);
 		if(r < 0){
-			if(debug_mode == 1) panic("[DEBUG] sys_ipc_mem_send: sys_mem_map wrong!\n");
+			if(debug_mode) panic("[DEBUG] sys_ipc_mem_send: sys_mem_map wrong!\n");
 			return r;
 		}
 	}
