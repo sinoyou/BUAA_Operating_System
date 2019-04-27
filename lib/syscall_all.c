@@ -427,11 +427,11 @@ int sys_ipc_can_send(int sysno, u_int envid, u_int value, u_int srcva,
 	e->env_ipc_from = curenv->env_id;
 	e->env_ipc_value = value;
 	if(srcva != 0) {
-		r = sys_mem_map(sysno, curenv->env_id, srcva, e->env_id, e->env_ipc_dstva, perm);
-		if(r < 0){
-			if(debug_mode) panic("[DEBUG] sys_ipc_mem_send: sys_mem_map wrong!\n");
-			return r;
-		}
+	//	r = sys_mem_map(sysno, curenv->env_id, srcva, e->env_id, e->env_ipc_dstva, perm);
+	//	if(r < 0){
+	//		if(debug_mode) panic("[DEBUG] sys_ipc_mem_send: sys_mem_map wrong!\n");
+	//		return r;
+	//	}
 	}
 	e->env_ipc_perm = perm;
 	e->env_status = ENV_RUNNABLE; 
