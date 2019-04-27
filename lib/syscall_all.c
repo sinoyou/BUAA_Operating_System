@@ -224,15 +224,13 @@ int sys_mem_map(int sysno, u_int srcid, u_int srcva, u_int dstid, u_int dstva,
 		return -E_BAD_ENV;
 	}
 	
-	pgdir_walk(srcenv->env_pgdir, round_srcva, 0, &src_ppte);
+	ppage = page_lookup(srcenv->env_pgdir, round_srcva, &src_ppte);
 	if(src_ppte!=NULL){
 		if((*src_ppte & PTE_R)==0 && (perm & PTE_R)!=0) {
 			if(debug_mode) panic("[DEBUG] sys_mem_map: try to from PTE_R==0 TO PTE_R!=0\n");
 			return -E_INVAL;
 		}
 	} 
-	Pte * ppte;	
-	ppage = page_lookup(srcenv->env_pgdir, round_srcva, &ppte);
 	ret = page_insert(dstenv->env_pgdir, ppage, round_dstva, perm);
 	if(ret < 0) {
 		if(debug_mode) panic("[DBEUG] sys_mem_map: page_insert error here\n");
@@ -427,11 +425,11 @@ int sys_ipc_can_send(int sysno, u_int envid, u_int value, u_int srcva,
 	e->env_ipc_from = curenv->env_id;
 	e->env_ipc_value = value;
 	if(srcva != 0) {
-	//	r = sys_mem_map(sysno, curenv->env_id, srcva, e->env_id, e->env_ipc_dstva, perm);
-	//	if(r < 0){
-	//		if(debug_mode) panic("[DEBUG] sys_ipc_mem_send: sys_mem_map wrong!\n");
-	//		return r;
-	//	}
+		r = sys_mem_map(sysno, curenv->env_id, srcva, e->env_id, e->env_ipc_dstva, perm);
+		if(r < 0){
+			if(debug_mode) panic("[DEBUG] sys_ipc_mem_send: sys_mem_map wrong!\n");
+			return r;
+		}
 	}
 	e->env_ipc_perm = perm;
 	e->env_status = ENV_RUNNABLE; 

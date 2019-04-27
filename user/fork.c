@@ -4,7 +4,6 @@
 #include <mmu.h>
 #include <env.h>
 
-
 /* ----------------- help functions ---------------- */
 
 /* Overview:
@@ -115,14 +114,26 @@ duppage(u_int envid, u_int pn)
 {
 	u_int addr;
 	u_int perm;
-	
+	int ret = 0;
 	
 	// vpd -> pde[]
 	// vpt -> pte[]
 	Pte * ppte = vpt[pn];
 	perm = *ppte & 0xfff;
-
-	
+	if((perm & PTE_V) == 0) {
+		// read only 
+		ret = syscall_mem_map(0, pn*BY2PG, envid, pn*BY2PG, perm);			// srcenvid: 0 -> curenv
+		if(ret < 0) {
+			return ret;
+		}
+	} else if ((perm & PTE_LIBRARY) > 0) {
+		// library
+		ret = syscall_mem_map(0, pn*BY2PG, envid, pn*BY2PG, perm);
+		if(ret < 0) {
+			return ret;
+		}
+	} /*else if ((perm & ))
+	*/
 	
 	
 	
