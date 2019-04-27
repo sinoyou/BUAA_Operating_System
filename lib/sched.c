@@ -17,7 +17,7 @@ void sched_yield(void)
 	static struct Env * cur = NULL;
 	static int index = 0;
 	while(1) {
-		if(LIST_FIRST(&env_sched_list[index])==NULL) {
+		while(LIST_FIRST(&env_sched_list[index])==NULL) {
 			index = 1 - index;
 		}
 		cur = LIST_FIRST(&env_sched_list[index]);

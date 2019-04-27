@@ -658,6 +658,7 @@ void pageout(int va, int context)
     u_long r;
     struct Page *p = NULL;
 
+	if(debug_mode) printf("[DEBUG] va: 0x%x\n",va);
     if (context < 0x80000000) {
         panic("tlb refill and alloc error!");
     }
@@ -667,7 +668,6 @@ void pageout(int va, int context)
     }
 
     if (va < 0x10000) {
-		if(debug_mode ==1) printf("[DEBUG] 0x%x\n",va);
 		panic("^^^^^^TOO LOW^^^^^^^^^");
     }
 

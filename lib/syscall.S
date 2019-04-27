@@ -17,9 +17,9 @@ NESTED(handle_sys,TF_SIZE, sp)
     // TODO: Copy the syscall number into $a0.
 	
 	lw a0, TF_REG4(sp)					// why we need to get a0 from sp
-	lw a1, TF_REG5(sp)
-	lw a2, TF_REG6(sp)
-	lw a3, TF_REG7(sp)
+	// lw a1, TF_REG5(sp)
+	// lw a2, TF_REG6(sp)
+	// lw a3, TF_REG7(sp)
 										// $a0 save the syscall number 
     addiu   a0, a0, -__SYSCALL_BASE     // a0 <- relative syscall number
     sll     t0, a0, 2                   // t0 <- relative syscall number times 4
@@ -36,7 +36,7 @@ NESTED(handle_sys,TF_SIZE, sp)
 	sw a0, 0(sp)
 	sw a1, 4(sp)
 	sw a2, 8(sp)
-	sw a3, 10(sp)
+	sw a3, 12(sp)
 	sw t3, 16(sp)
 	sw t4, 20(sp)
 	
