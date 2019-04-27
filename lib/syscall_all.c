@@ -224,7 +224,7 @@ int sys_mem_map(int sysno, u_int srcid, u_int srcva, u_int dstid, u_int dstva,
 		return -E_BAD_ENV;
 	}
 	
-	page_walk(srcenv->env_pgdir, round_srcva, 0, &src_ppte);
+	pgdir_walk(srcenv->env_pgdir, round_srcva, 0, &src_ppte);
 	if(src_ppte!=NULL){
 		if((*src_ppte & PTE_R)==0 && (perm & PTE_R)!=0) {
 			if(debug_mode) panic("[DEBUG] sys_mem_map: try to from PTE_R==0 TO PTE_R!=0\n");
