@@ -81,16 +81,39 @@ static void
 pgfault(u_int va)
 {
 	u_int *tmp;
+	int ret;
 	//	writef("fork.c:pgfault():\t va:%x\n",va);
-    
-    //map the new page at a temporary place
+    struct Page* ppage;
+	Pte* pte;
 
+	tmp = UXSTACKTOP - 2 * BY2PG;
+	// ppage = page_lookup(curenv->env_pgdir, va, &pte);
+	if(((*vpt)[VPN(va)] & PTE_COW) == 0) {
+		user_panic("[DEBUG] pgfault: pte's perm wrong!\n");
+		return ;
+	}
+	ret = syscall_mem_alloc(0, tmp, PTE_V|PTE_R);
+	if(ret < 0) {
+		user_panic("[DEBUG] pgfault: syscall_mem_alloc!\n");
+		return ret;
+	}
+
+
+    //map the new page at a temporary place
 	//copy the content
-	
+	user_bcopy(tmp, va, BY2PG);
     //map the page on the appropriate place
-	
-    //unmap the temporary place
-	
+    if(syscall_mem_map(0, tmp, 0, va, PTE_V|PTE_R)) {
+		user_panic("[DEBUG] pgfault: syscall_mem_map error !\n");
+		return -1;
+	}
+	//unmap the temporary place
+	ret = syscall_mem_unmap(0, tmp);
+	if(ret < 0) {
+		user_panic("[DEBUG] pgfault: syscall_mem_unmap error !\n");
+		return ret;
+
+	}
 }
 
 /* Overview:
@@ -121,22 +144,54 @@ duppage(u_int envid, u_int pn)
 	Pte * ppte = vpt[pn];
 	perm = *ppte & 0xfff;
 	if((perm & PTE_V) == 0) {
+		// not valide
+		ret = syscall_mem_map(0, pn*BY2PG, envid, pn*BY2PG, perm);			// srcenvid: 0 -> curenv
+		if(ret < 0) {
+			user_panic("[DEBUG] child map failed! read only\n");
+			return ret;
+		}
+	}else if((perm & PTE_R) == 0) {
 		// read only 
 		ret = syscall_mem_map(0, pn*BY2PG, envid, pn*BY2PG, perm);			// srcenvid: 0 -> curenv
 		if(ret < 0) {
+			user_panic("[DEBUG] child map failed! read only\n");
 			return ret;
 		}
 	} else if ((perm & PTE_LIBRARY) > 0) {
 		// library
 		ret = syscall_mem_map(0, pn*BY2PG, envid, pn*BY2PG, perm);
 		if(ret < 0) {
+			user_panic("[DEBUG] child map failed! library\n");
 			return ret;
 		}
-	} /*else if ((perm & ))
-	*/
-	
-	
-	
+	} else if ((perm & PTE_COW) > 0) { 
+		// has PTE_COW : Last fork
+		// father
+		ret = syscall_mem_map(0, pn*BY2PG, 0, pn*BY2PG, perm);
+		if(ret < 0) {
+			user_panic("[DEBUG] father map failed! PTE_COW\n");
+			return ret;
+		}
+		// child
+		ret = syscall_mem_map(0, pn*BY2PG, envid, pn*BY2PG, perm);
+		if(ret < 0) {
+			user_panic("[DEBUG] child map failed! PTE_COW\n");
+			return ret;
+		}
+	} else {
+		perm = perm | PTE_COW;
+
+		ret = syscall_mem_map(0, pn*BY2PG, 0, pn*BY2PG, perm);
+		if(ret < 0) {
+			user_panic("[DEBUG] father map failed! PTE_COW\n");
+			return ret;
+		}
+		ret = syscall_mem_map(0, pn*BY2PG, envid, pn*BY2PG, perm);
+		if(ret < 0) {
+			user_panic("[DEBUG] child map failed! PTE_COW\n");
+			return ret;
+		}
+	}
 	
 	//	user_panic("duppage not implemented");
 }
@@ -161,17 +216,18 @@ fork(void)
 	u_int i;
 
 	//The parent installs pgfault using set_pgfault_handler
-
+	set_pgfault_handler(pgfault);
 	//alloc a new alloc
-
 	newenvid = syscall_env_alloc();			// sys or syscall 我们用的时候是不是都用的是syscall
 	
 	if(newenvid == 0) {
 		// child 
-		env = &envs[ENVX(syscall_getenvid())];
+		env = &(envs[ENVX(syscall_getenvid())]);
 	} else {
 		// father
-
+		syscall_mem_alloc(0, UXSTACKTOP - BY2PG, PTE_V|PTE_R);
+		syscall_set_pgfault_handler(newenvid, __asm_pgfault_handler, UXSTACKTOP);
+		syscall_set_env_status(newenvid, ENV_RUNNABLE );
 
 	}
 	return newenvid;

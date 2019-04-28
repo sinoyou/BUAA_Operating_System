@@ -116,6 +116,14 @@ int sys_set_pgfault_handler(int sysno, u_int envid, u_int func, u_int xstacktop)
 	struct Env *env;
 	int ret;
 
+	ret = envid2env(envid, &env, 0);
+	if(ret < 0) {
+		if(debug_mode) printf("[DEBUG] sys_set_pgfault_handler: Wrong at envid2env\n");
+		return ret;
+	}
+
+	env->env_pgfault_handler = func;
+	env->env_xstacktop = xstacktop;
 
 	return 0;
 	//	panic("sys_set_pgfault_handler not implemented");
@@ -325,6 +333,17 @@ int sys_set_env_status(int sysno, u_int envid, u_int status)
 	// Your code here.
 	struct Env *env;
 	int ret;
+	ret = envid2env(envid, &env, 0);
+	if(ret < 0) {
+		if(debug_mode) panic("[DEBUG] sys_set_env_status: wrong at envid2env!\n");
+		return ret;
+	}
+	if(env->env_status != ENV_RUNNABLE && env->env_status != ENV_NOT_RUNNABLE && env->env_status != ENV_FREE) {
+		if(debug_mode) panic("[DEBUG] sys_set_env_status: env has the wrong status!\n");
+		return -E_INVAL;
+	}
+	
+	env->env_status = status;				//  是否需要将它装入可以调度的队列呢？在这里env本身就在可以调度的队列里面。
 
 	return 0;
 	//	panic("sys_env_set_status not implemented");
