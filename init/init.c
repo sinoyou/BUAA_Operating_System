@@ -28,8 +28,8 @@ void mips_init()
 //	ENV_CREATE(user_test_code);
 //	ENV_CREATE(user_test_code);
 //	ENV_CREATE(user_test_code);
-//	ENV_CREATE(user_fktest);
-	ENV_CREATE(user_pingpong);
+	ENV_CREATE(user_fktest);
+//	ENV_CREATE(user_pingpong);
 	
 	if(debug_mode) printf("[DEBUG] ENV_CREATE OK\n");
 

@@ -98,7 +98,7 @@ pgfault(u_int va)
 		return ret;
 	}
 
-
+	ROUNDDOWN(va, BY2PG);
     //map the new page at a temporary place
 	//copy the content
 	user_bcopy(tmp, va, BY2PG);
