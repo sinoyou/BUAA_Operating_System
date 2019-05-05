@@ -87,9 +87,10 @@ pgfault(u_int va)
 	Pte* pte;
 
 	va = ROUNDDOWN(va, BY2PG);
+//	tmp = UTOP - 2 * BY2PG;
 	tmp = UXSTACKTOP - 2 * BY2PG;
-	// ppage = page_lookup(curenv->env_pgdir, va, &pte);
-	if(((*vpt)[VPN(va)] & PTE_COW) == 0) {
+	u_int perm = (*vpt)[VPN(va)] & 0xfff;
+	if((perm & PTE_COW) == 0) {
 		user_panic("[DEBUG] pgfault: pte's perm wrong!\n");
 		return ;
 	}
@@ -103,7 +104,7 @@ pgfault(u_int va)
 	//copy the content
 	user_bcopy(va, tmp, BY2PG);
     //map the page on the appropriate place
-    if(syscall_mem_map(0, tmp, 0, va, PTE_V|PTE_R)) {
+    if(syscall_mem_map(0, tmp, 0, va, PTE_V|PTE_R)!=0) {
 		user_panic("[DEBUG] pgfault: syscall_mem_map error !\n");
 		return -1;
 	}
@@ -142,31 +143,28 @@ duppage(u_int envid, u_int pn)
 	// vpd -> pde[]
 	// vpt -> pte[]
 	Pte * ppte = vpt[pn];
-	perm = *ppte & 0xfff;
-	if((((perm & PTE_R) != 0) || ((perm & PTE_COW) != 0)) && (perm & PTE_V) ) {
-		if(perm & PTE_LIBRARY) {
-			perm = PTE_V | PTE_R | PTE_LIBRARY;
+	perm = (*vpt)[pn] & 0xfff;
+/*
+	if(perm & PTE_V) {
+		if((perm & PTE_R) || (perm & PTE_COW)) {
+			if(perm & PTE_LIBRARY) {
+				perm = perm | PTE_V | PTE_R;
+			} else {
+				perm = perm | PTE_V | PTE_R | PTE_COW;
+			}
+			ret = syscall_mem_map(0, pn*BY2PG, envid, pn*BY2PG, perm);
+			if(ret < 0) return ret;
+			ret = syscall_mem_map(0, pn*BY2PG, 0, pn*BY2PG, perm);
+			if(ret < 0) return ret;
+
 		} else {
-			perm = PTE_V | PTE_R | PTE_COW;
-		}
-		if(syscall_mem_map(0, pn*BY2PG, envid, pn*BY2PG, perm) < 0) {
-			user_panic("child failed\n");
-		}
-		if(syscall_mem_map(0, pn*BY2PG, 0, pn*BY2PG, perm) < 0) {
-			user_panic("father failed\n");
-		}
-	} else {
-		if(syscall_mem_map(0, pn*BY2PG, envid, pn*BY2PG, perm) < 0 ) {
-			user_panic("child failed\n");
+		ret = syscall_mem_map(0, pn*BY2PG, envid, pn*BY2PG,	perm);
+		if(ret < 0) return ret;			
 		}
 	}
-/*	if((perm & PTE_V) == 0) {
+	*/
+	if((perm & PTE_V) == 0) {
 		// not valide
-		ret = syscall_mem_map(0, pn*BY2PG, envid, pn*BY2PG, perm);			// srcenvid: 0 -> curenv
-		if(ret < 0) {
-			user_panic("[DEBUG] child map failed! read only\n");
-			return ret;
-		}
 	}else if((perm & PTE_R) == 0) {
 		// read only 
 		ret = syscall_mem_map(0, pn*BY2PG, envid, pn*BY2PG, perm);			// srcenvid: 0 -> curenv
@@ -209,7 +207,6 @@ duppage(u_int envid, u_int pn)
 			return ret;
 		}
 	}
-*/	
 	//	user_panic("duppage not implemented");
 }
 
@@ -235,7 +232,7 @@ fork(void)
 	//The parent installs pgfault using set_pgfault_handler
 	set_pgfault_handler(pgfault);
 	//alloc a new alloc
-	newenvid = syscall_env_alloc();			// sys or syscall 我们用的时候是不是都用的是syscall
+	newenvid = syscall_env_alloc();	
 	
 	if(newenvid == 0) {
 		// child 
@@ -243,13 +240,11 @@ fork(void)
 	} else {
 		// father
 		for(i=0;i<UTOP-BY2PG;i+=BY2PG) {
-			if(((*vpd)[VPN(i) /1024 ])!=0 && ((*vpt)[VPN(i)]!=0)) {
+			if(((*vpd)[VPN(i) /1024 ])!=0 && ((*vpt)[VPN(i)])!=0) {
 				duppage(newenvid, VPN(i));
 			}
 		}
 		syscall_mem_alloc(newenvid, UXSTACKTOP - BY2PG, PTE_V|PTE_R);
-
-	//		syscall_mem_alloc(0, UXSTACKTOP - BY2PG, PTE_V|PTE_R);
 		syscall_set_pgfault_handler(newenvid, __asm_pgfault_handler, UXSTACKTOP);
 		syscall_set_env_status(newenvid, ENV_RUNNABLE );
 

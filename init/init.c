@@ -13,7 +13,7 @@ void mips_init()
 {
 	printf("init.c:\tmips_init() is called\n");
 	mips_detect_memory();
-//	set_debug();
+	set_debug();
 
 	mips_vm_init();
 	page_init();
@@ -28,8 +28,8 @@ void mips_init()
 //	ENV_CREATE(user_test_code);
 //	ENV_CREATE(user_test_code);
 //	ENV_CREATE(user_test_code);
-//	ENV_CREATE(user_fktest);
-	ENV_CREATE(user_pingpong);
+	ENV_CREATE(user_fktest);
+//	ENV_CREATE(user_pingpong);
 	
 	if(debug_mode) printf("[DEBUG] ENV_CREATE OK\n");
 

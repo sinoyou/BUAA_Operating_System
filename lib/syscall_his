@@ -7,7 +7,6 @@
 
 extern char *KERNEL_SP;
 extern struct Env *curenv;
-extern int debug_mode;
 
 /* Overview:
  * 	This function is used to print a character on screen.
@@ -53,6 +52,7 @@ void *memcpy(void *destaddr, void const *srcaddr, u_int len)
  */
 u_int sys_getenvid(void)
 {
+	//printf("in env getid id = %d\n",curenv->env_id);
 	return curenv->env_id;
 }
 
@@ -64,10 +64,10 @@ u_int sys_getenvid(void)
  */
 void sys_yield(void)
 {
-	bcopy((void*)(KERNEL_SP - sizeof(struct Trapframe)),
-			(void*)(TIMESTACK - sizeof(struct Trapframe)),
-			sizeof(struct Trapframe));
-	sched_yield();
+	bcopy((void *)KERNEL_SP - sizeof(struct Trapframe),
+		  (void *)TIMESTACK - sizeof(struct Trapframe),
+		  sizeof(struct Trapframe));
+	sched_yield();//调度 切换进程 run是从TIMESTACK取的 所以保存一下现场KERNEL_SP到TIMESTACK
 }
 
 /* Overview:
@@ -86,7 +86,7 @@ int sys_env_destroy(int sysno, u_int envid)
 	/*
 		printf("[%08x] exiting gracefully\n", curenv->env_id);
 		env_destroy(curenv);
-	*/
+	*/ 
 	int r;
 	struct Env *e;
 
@@ -115,16 +115,10 @@ int sys_set_pgfault_handler(int sysno, u_int envid, u_int func, u_int xstacktop)
 	// Your code here.
 	struct Env *env;
 	int ret;
-
-	ret = envid2env(envid, &env, 0);
-	if(ret < 0) {
-		if(debug_mode) printf("[DEBUG] sys_set_pgfault_handler: Wrong at envid2env\n");
-		return ret;
-	}
-
-	env->env_pgfault_handler = func;
+	ret = envid2env(envid,&env,0);
+	if(ret) return ret;
+	env->env_pgfault_handler = func;//func=__asm_pgfault_handler
 	env->env_xstacktop = xstacktop;
-
 	return 0;
 	//	panic("sys_set_pgfault_handler not implemented");
 }
@@ -151,34 +145,24 @@ int sys_mem_alloc(int sysno, u_int envid, u_int va, u_int perm)
 	// Your code here.
 	struct Env *env;
 	struct Page *ppage;
-	int ret;
-	ret = 0;
-	if(va >= UTOP || va < 0){
-		if(debug_mode)	panic("[DEBUG] sys_mem_alloc: va should < UTOP\n");
+	int r;
+	if(perm & PTE_COW){ //结果不为0 说明设置了这一位
 		return -E_INVAL;
 	}
-	if((perm & PTE_COW) != 0) {
-		if(debug_mode) panic("[DEBUG] sys_mem_alloc: PTE_COW cannot permit\n");
+	if((perm & PTE_V) == 0) { //没有设置PTE_V
 		return -E_INVAL;
 	}
-	ret = envid2env(envid, &env, 1);		// how to use checkperm?
-	if(ret < 0) {
-		if(debug_mode) panic("[DEBUG] sys_mem_alloc: envid2env has wrong here\n");
-		return ret;
+	if(va >= UTOP || va <0) { 
+		return -E_INVAL;
 	}
-	Pde * pgdir = env->env_pgdir;
-	ret = page_alloc(&ppage);
-	if(ret < 0) {
-		if(debug_mode) panic("[DEBUG] sys_mem_alloc: page_alloc has wrong here\n");
-		return ret;
-	}
-	//ppage -> pp_ref ++;
-	ret = page_insert(pgdir, ppage, va, perm);
-	if(ret < 0) {
-		if(debug_mode) panic("[DEBUG] sys_mem_alloc: page_insert has wrong here\n");
-		return ret;
-	}
-	return 0;
+	r = envid2env(envid,&env,1);
+	if(r) return r;
+	r = page_alloc(&ppage);
+	ppage->pp_ref++;
+	if(r) return r;
+	r = page_insert(env->env_pgdir,ppage,va,perm);
+	if(r) return r;
+	return 0;//success
 }
 
 /* Overview:
@@ -202,49 +186,39 @@ int sys_mem_map(int sysno, u_int srcid, u_int srcva, u_int dstid, u_int dstva,
 	struct Env *srcenv;
 	struct Env *dstenv;
 	struct Page *ppage;
-	Pte *src_ppte;
-	Pte *dst_ppte;
+	Pte *ppte;
 
 	ppage = NULL;
 	ret = 0;
 	round_srcva = ROUNDDOWN(srcva, BY2PG);
 	round_dstva = ROUNDDOWN(dstva, BY2PG);
-	
-	if((perm & PTE_V) == 0) {
-		if(debug_mode) panic("[DEBUG] sys_mem_map: perm has wrong here\n");
-		return -E_INVAL;
-	}
-
-	if(dstva >= UTOP || srcva >= UTOP) {
-		if(debug_mode) panic("[DEBUG] sys_mem_map: va >= UTOP\n");
-		return -E_INVAL;
-	}
 
     //your code here
-	ret = envid2env(srcid, &srcenv, 1);
-	if(ret<0) {
-		if(debug_mode) panic("[DEBUG] sys_mem_map: envid2env-srcid wrong here\n");
-		return -E_BAD_ENV;
+	//if(perm & PTE_COW){ //结果不为0 说明设置了这一位
+	//	return -1;
+	//	return -E_INVAL;
+	//}
+	if((perm & PTE_V) == 0) { //没有设置PTE_V
+		return -E_INVAL;
 	}
-	ret = envid2env(dstid, &dstenv, 1);
-	if(ret < 0) {
-		if(debug_mode) panic("[DEBUG] sys_mem_map: envid2env-dstid wrong here\n");
-		return -E_BAD_ENV;
+	if(srcva >= UTOP || srcva <0) { 
+		return -E_INVAL;
 	}
-	
-	ppage = page_lookup(srcenv->env_pgdir, round_srcva, &src_ppte);
-	if(src_ppte!=NULL){
-		if((*src_ppte & PTE_R)==0 && (perm & PTE_R)!=0) {
-			if(debug_mode) panic("[DEBUG] sys_mem_map: try to from PTE_R==0 TO PTE_R!=0\n");
-			return -E_INVAL;
-		}
-	} 
-	ret = page_insert(dstenv->env_pgdir, ppage, round_dstva, perm);
-	if(ret < 0) {
-		if(debug_mode) panic("[DBEUG] sys_mem_map: page_insert error here\n");
-		return ret;
+	if(dstva >= UTOP || dstva <0) { 
+		return -E_INVAL;
 	}
-
+	ret = envid2env(srcid,&srcenv,1);
+	if(ret) return ret;
+	ret = envid2env(dstid,&dstenv,1);
+	if(ret) return ret;
+	ppage = page_lookup(srcenv->env_pgdir,round_srcva,&ppte);//求出了va的strcut Page* 同时求出了va的页表项
+	if(ppage == 0) return -E_INVAL;
+    //Probably we should add a restriction that you can't go from non-writable to writable?
+	if(ppte != NULL && (((*ppte)&PTE_R) == 0) && ((perm&PTE_R) != 0)){
+		return -E_INVAL;
+	}
+	ret = page_insert(dstenv->env_pgdir,ppage,round_dstva,perm);
+	if(ret) return ret;
 	return ret;
 }
 
@@ -262,22 +236,12 @@ int sys_mem_unmap(int sysno, u_int envid, u_int va)
 	// Your code here.
 	int ret;
 	struct Env *env;
-	Pte *ppte;
-	
-	if(va >= UTOP || va < 0) {
-		if(debug_mode) panic("[DEBUG] sys_mem_unmap: va >= UTOP\n");
+	if (va >= UTOP || va < 0) {
 		return -E_INVAL;
 	}
-
-	ret = envid2env(envid, &env, 1);
-	if(ret < 0) {
-		if(debug_mode) panic("[DEBUG] sys_mem_unmap: envid2env-envid wrong here \n");
-		return ret;
-	}
-	// u_int round_va = ROUNDDOWN(va, BY2PG);
-	
-	page_remove(env->env_pgdir, va);
-
+	ret = envid2env(envid,&env,1);
+	if(ret) return ret;
+	page_remove(env->env_pgdir,va);
 	return ret;
 	//	panic("sys_mem_unmap not implemented");
 }
@@ -296,23 +260,22 @@ int sys_mem_unmap(int sysno, u_int envid, u_int va)
  */
 int sys_env_alloc(void)
 {
-	// Your code here.
+	// Your code here. 
 	int r;
 	struct Env *e;
-
-	r = env_alloc(&e, curenv->env_id);		// alloc the child env
-	if(r < 0) {
-		if(debug_mode) panic("[DEBUG] sys_env_alloc: env_alloc has wrong\n");
-		return r;
-	}
-	e->env_status = ENV_NOT_RUNNABLE;
-	// copy the Trapframe
-	bcopy( (void*)(KERNEL_SP - sizeof(struct Trapframe)), (void*)(&(e->env_tf)), sizeof(struct Trapframe));	// src dst len
-	
-	e->env_tf.pc = e->env_tf.cp0_epc;
-	e->env_tf.regs[2] = 0;
-
+	r = env_alloc(&e,curenv->env_id); //子进程e
+	if(r) return r;
+	e->env_status = ENV_NOT_RUNNABLE; 
+	//e->env_tf = curenv->env_tf;
+	//保存当前进程(父进程)的现场到子进程中
+	bcopy(KERNEL_SP - sizeof(struct Trapframe),&(e->env_tf),sizeof(struct Trapframe));
+	//e_env_tf.cp0_epc就是父进程中断的位置 也就是子进程开始继续执行的位置 即pc值
+	e->env_tf.pc = e->env_tf.cp0_epc;//epc在handle_sys中已经+4
+	//printf("in env alloc pc=%x\n",e->env_tf.pc);
+	//e->env_tf.regs[2]就是v0 子进程应该返回0
+	e->env_tf.regs[2] = 0; //v0=0
 	e->env_pri = curenv->env_pri;
+	//printf("in env alloc id = %d\n",e->env_id);
 	return e->env_id;
 	//	panic("sys_env_alloc not implemented");
 }
@@ -334,18 +297,12 @@ int sys_set_env_status(int sysno, u_int envid, u_int status)
 	// Your code here.
 	struct Env *env;
 	int ret;
-	ret = envid2env(envid, &env, 0);
-	if(ret < 0) {
-		if(debug_mode) panic("[DEBUG] sys_set_env_status: wrong at envid2env!\n");
-		return ret;
-	}
-	if(status != ENV_RUNNABLE && status != ENV_NOT_RUNNABLE && status != ENV_FREE) {
-		if(debug_mode) panic("[DEBUG] sys_set_env_status: env has the wrong status!\n");
+	if (status != ENV_RUNNABLE && status != ENV_NOT_RUNNABLE && status != ENV_FREE) {
 		return -E_INVAL;
 	}
-	
-	env->env_status = status;				//  是否需要将它装入可以调度的队列呢？在这里env本身就在可以调度的队列里面。
-
+	ret = envid2env(envid,&env,0);
+	if(ret) return ret;
+	env->env_status = status;
 	return 0;
 	//	panic("sys_env_set_status not implemented");
 }
@@ -399,13 +356,12 @@ void sys_panic(int sysno, char *msg)
 void sys_ipc_recv(int sysno, u_int dstva)
 {
 	if (dstva >= UTOP) {
-		if(debug_mode) panic("[DEBUG] sys_ipc_recv: wrong dstva!\n");
+		return;
 	}
-	curenv->env_status = ENV_NOT_RUNNABLE;
-	curenv->env_ipc_dstva = dstva;
 	curenv->env_ipc_recving = 1;
-	// sched_yield();
-	sys_yield();
+	curenv->env_ipc_dstva = dstva;//之后接受到的消息(物理页里边的数据)需要映射到dstva上
+	curenv->env_status = ENV_NOT_RUNNABLE;
+	sys_yield();//giving up cpu做进程切换了 切换到别的进程执行 当前是NOT_RUN的了 但是在调度函数中可能时间片还没有用完 所以修改一下调度函数判断NOT_RUN 
 }
 
 /* Overview:
@@ -432,27 +388,36 @@ int sys_ipc_can_send(int sysno, u_int envid, u_int value, u_int srcva,
 	int r;
 	struct Env *e;
 	struct Page *p;
-	
-	r = envid2env(envid, &e, 0);
-	if(r < 0){
-		if(debug_mode) panic("[DEBUG] sys_ipc_can_send: envid2env wrong!\n");
-		return r;
+	if (srcva >= UTOP || srcva < 0) {
+		return -E_INVAL;
 	}
-	if(e->env_ipc_recving != 1) {
+	r = envid2env(envid,&e,0);
+	if (r) return r;
+	if (e->env_ipc_recving != 1) {
 		return -E_IPC_NOT_RECV;
 	}
-	e->env_ipc_recving = 0;
-	e->env_ipc_from = curenv->env_id;
-	e->env_ipc_value = value;
-	if(srcva != 0) {
-		r = sys_mem_map(sysno, curenv->env_id, srcva, e->env_id, e->env_ipc_dstva, perm);
-		if(r < 0){
-			if(debug_mode) panic("[DEBUG] sys_ipc_mem_send: sys_mem_map wrong!\n");
-			return r;
-		}
+	/*Pte* ppte;
+	p = page_lookup(curenv->env_pgdir,srcva,&ppte);
+	if(p == 0){
+		//...
 	}
-	e->env_ipc_perm = perm;
-	e->env_status = ENV_RUNNABLE; 
+	else {//物理页存在 映射到e->env_ipc_dstva上才能真正的实现共享物理页
+		r = page_insert(e->env_pgdir,p,e->env_ipc_dstva,perm);
+		if (r) return r;
+	}*/
+	if (srcva) { //srcva!=0 有对应的物理页 需要映射到e->env_ipc_dstva上
+		r = sys_mem_map(sysno,curenv->env_id,srcva,e->env_id,e->env_ipc_dstva,perm);
+		if(r) return r;
+		e->env_ipc_perm = perm;
+	}
+	else {
+		e->env_ipc_perm = 0;
+	}
+	e->env_ipc_value = value;
+	e->env_ipc_from = curenv->env_id;
+	e->env_ipc_recving = 0;
+	//e->env_ipc_perm = perm;
+	e->env_status = ENV_RUNNABLE;
 	return 0;
 }
 
