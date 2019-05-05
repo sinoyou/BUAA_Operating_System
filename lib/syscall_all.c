@@ -306,7 +306,7 @@ int sys_env_alloc(void)
 		return r;
 	}
 	// copy the Trapframe
-	bcopy( (void*)(&(curenv->env_tf)), (void*)(&(e->env_tf)), sizeof(struct Trapframe));	// src dst len
+	bcopy( (void*)(KERNEL_SP - sizeof(struct Trapframe)), (void*)(&(e->env_tf)), sizeof(struct Trapframe));	// src dst len
 	
 	e->env_tf.pc = e->env_tf.cp0_epc;
 	e->env_tf.regs[2] = 0;

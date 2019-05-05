@@ -86,6 +86,7 @@ pgfault(u_int va)
     struct Page* ppage;
 	Pte* pte;
 
+	va = ROUNDDOWN(va, BY2PG);
 	tmp = UXSTACKTOP - 2 * BY2PG;
 	// ppage = page_lookup(curenv->env_pgdir, va, &pte);
 	if(((*vpt)[VPN(va)] & PTE_COW) == 0) {
@@ -98,10 +99,9 @@ pgfault(u_int va)
 		return ret;
 	}
 
-	ROUNDDOWN(va, BY2PG);
     //map the new page at a temporary place
 	//copy the content
-	user_bcopy(tmp, va, BY2PG);
+	user_bcopy(va, tmp, BY2PG);
     //map the page on the appropriate place
     if(syscall_mem_map(0, tmp, 0, va, PTE_V|PTE_R)) {
 		user_panic("[DEBUG] pgfault: syscall_mem_map error !\n");
@@ -143,7 +143,24 @@ duppage(u_int envid, u_int pn)
 	// vpt -> pte[]
 	Pte * ppte = vpt[pn];
 	perm = *ppte & 0xfff;
-	if((perm & PTE_V) == 0) {
+	if((((perm & PTE_R) != 0) || ((perm & PTE_COW) != 0)) && (perm & PTE_V) ) {
+		if(perm & PTE_LIBRARY) {
+			perm = PTE_V | PTE_R | PTE_LIBRARY;
+		} else {
+			perm = PTE_V | PTE_R | PTE_COW;
+		}
+		if(syscall_mem_map(0, pn*BY2PG, envid, pn*BY2PG, perm) < 0) {
+			user_panic("child failed\n");
+		}
+		if(syscall_mem_map(0, pn*BY2PG, 0, pn*BY2PG, perm) < 0) {
+			user_panic("father failed\n");
+		}
+	} else {
+		if(syscall_mem_map(0, pn*BY2PG, envid, pn*BY2PG, perm) < 0 ) {
+			user_panic("child failed\n");
+		}
+	}
+/*	if((perm & PTE_V) == 0) {
 		// not valide
 		ret = syscall_mem_map(0, pn*BY2PG, envid, pn*BY2PG, perm);			// srcenvid: 0 -> curenv
 		if(ret < 0) {
@@ -192,7 +209,7 @@ duppage(u_int envid, u_int pn)
 			return ret;
 		}
 	}
-	
+*/	
 	//	user_panic("duppage not implemented");
 }
 
@@ -225,7 +242,14 @@ fork(void)
 		env = &(envs[ENVX(syscall_getenvid())]);
 	} else {
 		// father
-		syscall_mem_alloc(0, UXSTACKTOP - BY2PG, PTE_V|PTE_R);
+		for(i=0;i<UTOP-BY2PG;i+=BY2PG) {
+			if(((*vpd)[VPN(i) /1024 ])!=0 && ((*vpt)[VPN(i)]!=0)) {
+				duppage(newenvid, VPN(i));
+			}
+		}
+		syscall_mem_alloc(newenvid, UXSTACKTOP - BY2PG, PTE_V|PTE_R);
+
+	//		syscall_mem_alloc(0, UXSTACKTOP - BY2PG, PTE_V|PTE_R);
 		syscall_set_pgfault_handler(newenvid, __asm_pgfault_handler, UXSTACKTOP);
 		syscall_set_env_status(newenvid, ENV_RUNNABLE );
 
