@@ -13,7 +13,7 @@ void mips_init()
 {
 	printf("init.c:\tmips_init() is called\n");
 	mips_detect_memory();
-	set_debug();
+//	set_debug();
 
 	mips_vm_init();
 	page_init();

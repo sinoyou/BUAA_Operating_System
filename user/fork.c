@@ -87,7 +87,6 @@ pgfault(u_int va)
 	Pte* pte;
 
 	va = ROUNDDOWN(va, BY2PG);
-//	tmp = UTOP - 2 * BY2PG;
 	tmp = UXSTACKTOP - 2 * BY2PG;
 	u_int perm = (*vpt)[VPN(va)] & 0xfff;
 	if((perm & PTE_COW) == 0) {
@@ -97,22 +96,22 @@ pgfault(u_int va)
 	ret = syscall_mem_alloc(0, tmp, PTE_V|PTE_R);
 	if(ret < 0) {
 		user_panic("[DEBUG] pgfault: syscall_mem_alloc!\n");
-		return ret;
+		return ;
 	}
 
     //map the new page at a temporary place
 	//copy the content
-	user_bcopy(va, tmp, BY2PG);
+	user_bcopy(va, tmp, BY2PG);    // ???why do we need to copy it ?
     //map the page on the appropriate place
     if(syscall_mem_map(0, tmp, 0, va, PTE_V|PTE_R)!=0) {
 		user_panic("[DEBUG] pgfault: syscall_mem_map error !\n");
-		return -1;
+		return ;
 	}
 	//unmap the temporary place
 	ret = syscall_mem_unmap(0, tmp);
 	if(ret < 0) {
 		user_panic("[DEBUG] pgfault: syscall_mem_unmap error !\n");
-		return ret;
+		return ;
 
 	}
 }
@@ -230,7 +229,7 @@ fork(void)
 	u_int i;
 
 	//The parent installs pgfault using set_pgfault_handler
-	set_pgfault_handler(pgfault);
+	set_pgfault_handler(pgfault);						// what does va/pgfault use here?
 	//alloc a new alloc
 	newenvid = syscall_env_alloc();	
 	
@@ -244,9 +243,9 @@ fork(void)
 				duppage(newenvid, VPN(i));
 			}
 		}
-		syscall_mem_alloc(newenvid, UXSTACKTOP - BY2PG, PTE_V|PTE_R);
-		syscall_set_pgfault_handler(newenvid, __asm_pgfault_handler, UXSTACKTOP);
-		syscall_set_env_status(newenvid, ENV_RUNNABLE );
+		syscall_mem_alloc(newenvid, UXSTACKTOP - BY2PG, PTE_V|PTE_R); //分配子进程的异常处理栈
+		syscall_set_pgfault_handler(newenvid, __asm_pgfault_handler, UXSTACKTOP); // 设置子进程的处理函数
+		syscall_set_env_status(newenvid, ENV_RUNNABLE );  // 设置子进程的运行状态
 
 	}
 	return newenvid;

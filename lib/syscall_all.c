@@ -157,6 +157,10 @@ int sys_mem_alloc(int sysno, u_int envid, u_int va, u_int perm)
 		if(debug_mode)	panic("[DEBUG] sys_mem_alloc: va should < UTOP\n");
 		return -E_INVAL;
 	}
+	if((perm & PTE_V) == 0) {
+		if(debug_mode) panic("[DEBUG] sys_mem_alloc: PTE_E is required\n");
+		return -E_INVAL;
+	}
 	if((perm & PTE_COW) != 0) {
 		if(debug_mode) panic("[DEBUG] sys_mem_alloc: PTE_COW cannot permit\n");
 		return -E_INVAL;
@@ -221,12 +225,12 @@ int sys_mem_map(int sysno, u_int srcid, u_int srcva, u_int dstid, u_int dstva,
 	}
 
     //your code here
-	ret = envid2env(srcid, &srcenv, 1);
+	ret = envid2env(srcid, &srcenv, 0);    // if we need the checkperm set here?
 	if(ret<0) {
 		if(debug_mode) panic("[DEBUG] sys_mem_map: envid2env-srcid wrong here\n");
 		return -E_BAD_ENV;
 	}
-	ret = envid2env(dstid, &dstenv, 1);
+	ret = envid2env(dstid, &dstenv, 0);
 	if(ret < 0) {
 		if(debug_mode) panic("[DEBUG] sys_mem_map: envid2env-dstid wrong here\n");
 		return -E_BAD_ENV;
