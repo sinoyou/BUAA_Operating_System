@@ -8,5 +8,12 @@
 
 void umain(void)
 {
-	writef("hello world\n");
+	int i;
+	for(i=0;i<2000000;i++) {
+		
+		int id = fork();
+		if(id == 0)
+			break;
+		writef("I have creat %d env\n", i);
+	}
 }
