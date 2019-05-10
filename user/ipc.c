@@ -36,7 +36,7 @@ u_int
 ipc_recv(u_int *whom, u_int dstva, u_int *perm)
 {
 	extern struct Env* envs;
-	struct Env* env = &envs[ENVX(dstva)];
+	struct Env* env = &envs[ENVX(syscall_getenvid())];
 
 	//printf("ipc_recv:come 0\n");
 	syscall_ipc_recv(dstva);
