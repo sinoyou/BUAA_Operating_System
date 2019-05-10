@@ -486,7 +486,20 @@ int sys_ipc_can_send(int sysno, u_int envid, u_int value, u_int srcva,
  *	* ---------------------------------*
  */
 int sys_write_dev(int sysno, u_int va, u_int dev, u_int len)
-{
+{		
+	// check the va
+	int match_addr = 0;
+	if(dev >= 0x10000000 && dev < 0x10000020) match_addr = 1;
+	else if (dev >= 0x13000000 && dev < 0x13004200) match_addr = 1;
+	else if (dev >= 0x15000000 && dev < 0x15000200) match_addr = 1;
+	else {
+		if(debug_mode) panic("[DEBUG] sys_write_dev: va is error!\n");
+		return -E_INVAL;
+	}
+
+	int kva = dev + 0xA0000000;
+	bcopy(va, kva, len);
+	return 0;
         // Your code here
 }
 
@@ -509,4 +522,16 @@ int sys_write_dev(int sysno, u_int va, u_int dev, u_int len)
 int sys_read_dev(int sysno, u_int va, u_int dev, u_int len)
 {
         // Your code here
+	int match_addr = 0;
+	if(dev >= 0x10000000 && dev < 0x10000020) match_addr = 1;
+	else if (dev >= 0x13000000 && dev < 0x13004200) match_addr = 1;
+	else if (dev >= 0x15000000 && dev < 0x15000200) match_addr = 1;
+	else {
+		if(debug_mode) panic("[DEBUG] sys_write_dev: va is error!\n");
+		return -E_INVAL;
+	}
+	u_int dev_va = dev - 0xA0000000;
+
+	bcopy(dev_va, va, len);
+	return 0;
 }
