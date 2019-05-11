@@ -31,10 +31,10 @@ ide_read(u_int diskno, u_int secno, void *dst, u_int nsecs)
 	int zero = 0;
 	
 	// set the IDE id
-	syscall_write_dev(&diskno, 0x13000010, sizeof(int));
 
 	while (offset_begin + offset < offset_end) {
         // Your code here
+		syscall_write_dev(&diskno, 0x13000010, sizeof(int));
 		int offset_sum = offset_begin + offset;
 		syscall_write_dev(&offset_sum, 0x13000000, sizeof(int));
 		syscall_write_dev(&zero, 0x13000020, sizeof(int));
@@ -74,11 +74,11 @@ ide_write(u_int diskno, u_int secno, void *src, u_int nsecs)
 	int offset_end =  offset_begin + nsecs * 0x200;
 	int offset = 0;
 	int one = 1;
-// 	writef("diskno: %d\n", diskno);
+ 	writef("diskno: %d\n", diskno);
 	// set the IDE id
-	syscall_write_dev(&diskno, 0x13000010, sizeof(int));
 	while (offset_begin + offset < offset_end ) {
 	    // copy data from source array to disk buffer.
+		syscall_write_dev(&diskno, 0x13000010, sizeof(int));
 		int offset_sum = offset_begin + offset;
 		syscall_write_dev(&offset_sum, 0x13000000, sizeof(int));
 		syscall_write_dev(src+offset, 0x13004000, 0x200);
