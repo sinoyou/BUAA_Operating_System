@@ -74,7 +74,7 @@ ide_write(u_int diskno, u_int secno, void *src, u_int nsecs)
 	int offset_end =  offset_begin + nsecs * 0x200;
 	int offset = 0;
 	int one = 1;
-	writef("diskno: %d\n", diskno);
+// 	writef("diskno: %d\n", diskno);
 	// set the IDE id
 	syscall_write_dev(&diskno, 0x13000010, sizeof(int));
 	while (offset_begin + offset < offset_end ) {
