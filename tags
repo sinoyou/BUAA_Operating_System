@@ -344,13 +344,21 @@ Node	test/test_queue.c	/^} Node;$/;"	t	typeref:struct:Node	file:
 OUTPUT	lib/print.c	36;"	d	file:
 OUTPUT	user/print.c	36;"	d	file:
 O_ACCMODE	user/lib.h	135;"	d
+O_ACCMODE	user/lib.h	137;"	d
 O_CREAT	user/lib.h	137;"	d
+O_CREAT	user/lib.h	139;"	d
 O_EXCL	user/lib.h	139;"	d
+O_EXCL	user/lib.h	141;"	d
 O_MKDIR	user/lib.h	140;"	d
+O_MKDIR	user/lib.h	142;"	d
 O_RDONLY	user/lib.h	132;"	d
+O_RDONLY	user/lib.h	134;"	d
 O_RDWR	user/lib.h	134;"	d
+O_RDWR	user/lib.h	136;"	d
 O_TRUNC	user/lib.h	138;"	d
+O_TRUNC	user/lib.h	140;"	d
 O_WRONLY	user/lib.h	133;"	d
+O_WRONLY	user/lib.h	135;"	d
 Open	fs/serv.c	/^struct Open {$/;"	s	file:
 PADDR	include/mmu.h	147;"	d
 PDMAP	include/mmu.h	17;"	d
@@ -1116,9 +1124,11 @@ syscall_mem_map	user/syscall_lib.c	/^syscall_mem_map(u_int srcid, u_int srcva, u
 syscall_mem_unmap	user/syscall_lib.c	/^syscall_mem_unmap(u_int envid, u_int va)$/;"	f
 syscall_panic	user/syscall_lib.c	/^syscall_panic(char *msg)$/;"	f
 syscall_putchar	user/syscall_lib.c	/^void syscall_putchar(char ch)$/;"	f
+syscall_read_dev	user/syscall_lib.c	/^syscall_read_dev(u_int va, u_int dev, u_int len)$/;"	f
 syscall_set_env_status	user/syscall_lib.c	/^syscall_set_env_status(u_int envid, u_int status)$/;"	f
 syscall_set_pgfault_handler	user/syscall_lib.c	/^syscall_set_pgfault_handler(u_int envid, void (*func)(void), u_int xstacktop)$/;"	f
 syscall_set_trapframe	user/syscall_lib.c	/^syscall_set_trapframe(u_int envid, struct Trapframe *tf)$/;"	f
+syscall_write_dev	user/syscall_lib.c	/^syscall_write_dev(u_int va, u_int dev, u_int len)$/;"	f
 syscall_yield	user/syscall_lib.c	/^syscall_yield(void)$/;"	f
 t0	include/asm-mips3k/regdef.h	23;"	d
 t0	include/asm/regdef.h	23;"	d
@@ -1192,6 +1202,7 @@ user_PrintChar	user/print.c	/^user_PrintChar(char *buf, char c, int length, int 
 user_PrintNum	user/print.c	/^user_PrintNum(char *buf, unsigned long u, int base, int negFlag,$/;"	f
 user_PrintString	user/print.c	/^user_PrintString(char *buf, char *s, int length, int ladjust)$/;"	f
 user_assert	user/lib.h	128;"	d
+user_assert	user/lib.h	130;"	d
 user_bcopy	user/fork.c	/^void user_bcopy(const void *src, void *dst, size_t len)$/;"	f
 user_bzero	user/fork.c	/^void user_bzero(void *v, u_int n)$/;"	f
 user_dir	Makefile	/^user_dir	  := user$/;"	m

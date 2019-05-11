@@ -203,7 +203,24 @@ struct File *create_file(struct File *dirf) {
     struct File *dirblk;
     int i, bno, found;
     int nblk = dirf->f_size / BY2BLK;
-    
+	
+	if(nblk == 0) {					// empty dir
+		return (struct File *)(disk[make_link_block(dirf, 0)].data);
+	} else if (nblk <= NDIRECT) {		// direct pointer
+		bno = dirf -> f_direct[nblk-1];
+	} else {				// indirect pointer
+		bno = ((uint32_t *) (disk[dirf -> f_indirect].data))[nblk-1];
+	}
+
+	dirblk = (struct File*)(disk[bno].data);
+
+	for(i=0;i < FILE2BLK;i++) {
+		if(dirblk[i].f_name[0]=='\0'){
+			return &dirblk[i];
+		}
+	}
+	
+	return (struct File *)(disk[make_link_block(dirf, nblk)].data);
     // Your code here
 }
 
