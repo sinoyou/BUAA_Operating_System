@@ -530,7 +530,7 @@ int sys_read_dev(int sysno, u_int va, u_int dev, u_int len)
 		if(debug_mode) panic("[DEBUG] sys_write_dev: va is error!\n");
 		return -E_INVAL;
 	}
-	u_int dev_va = dev - 0xA0000000;
+	u_int dev_va = dev + 0xA0000000;
 
 	bcopy(dev_va, va, len);
 	return 0;
