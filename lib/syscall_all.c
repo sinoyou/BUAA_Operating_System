@@ -497,7 +497,7 @@ int sys_write_dev(int sysno, u_int va, u_int dev, u_int len)
 		return -E_INVAL;
 	}
 
-	int dev_kav = dev + 0xA0000000;
+	int dev_kva = dev + 0xA0000000;
 	bcopy(va, dev_kva, len);
 	return 0;
         // Your code here
