@@ -16,8 +16,6 @@ int block_is_free(u_int);
 u_int
 diskaddr(u_int blockno)
 {
-	return 0;
-
 	if( super && blockno > super->s_nblocks){
 		user_panic("[DEBUG] fs.c:diskaddr blockno > nblocks!\n");
 	}
@@ -71,7 +69,6 @@ block_is_dirty(u_int blockno)
 int
 map_block(u_int blockno)
 {
-	return 0;
 	// Step 1: Decide whether this block is already mapped to a page of physical memory.
 	if(block_is_mapped(blockno) != 0) {
 		return 0;
@@ -88,7 +85,6 @@ void
 unmap_block(u_int blockno)
 {
 	int r;
-	return 0;
 	// Step 1: check if this block is mapped.
 	if(block_is_mapped(blockno) == 0) {
 		return 0;
@@ -535,8 +531,6 @@ file_dirty(struct File *f, u_int offset)
 int
 dir_lookup(struct File *dir, char *name, struct File **file)
 {
-	return -E_NOT_FOUND;
-
 	int r;
 	u_int i, j, nblock;
 	void *blk;
