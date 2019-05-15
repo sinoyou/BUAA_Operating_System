@@ -28,8 +28,7 @@ ide_read(u_int diskno, u_int secno, void *dst, u_int nsecs)
 	int offset_begin = secno * 0x200;
 	int offset_end = offset_begin + nsecs * 0x200;
 	int offset = 0;
-	int zero = 0;
-	
+	char zero = 0;
 	// set the IDE id
 
 	while (offset_begin + offset < offset_end) {
@@ -37,7 +36,7 @@ ide_read(u_int diskno, u_int secno, void *dst, u_int nsecs)
 		syscall_write_dev(&diskno, 0x13000010, sizeof(int));
 		int offset_sum = offset_begin + offset;
 		syscall_write_dev(&offset_sum, 0x13000000, sizeof(int));
-		syscall_write_dev(&zero, 0x13000020, sizeof(int));
+		syscall_write_dev(&zero, 0x13000020, sizeof(char));
 		int status;
 		syscall_read_dev(&status, 0x13000030, sizeof(int));
 
@@ -73,7 +72,7 @@ ide_write(u_int diskno, u_int secno, void *src, u_int nsecs)
 	int offset_begin = secno * 0x200;
 	int offset_end =  offset_begin + nsecs * 0x200;
 	int offset = 0;
-	int one = 1;
+	char one = 1;
  	writef("diskno: %d\n", diskno);
 	// set the IDE id
 	while (offset_begin + offset < offset_end ) {
@@ -82,7 +81,7 @@ ide_write(u_int diskno, u_int secno, void *src, u_int nsecs)
 		int offset_sum = offset_begin + offset;
 		syscall_write_dev(&offset_sum, 0x13000000, sizeof(int));
 		syscall_write_dev(src+offset, 0x13004000, 0x200);
-		syscall_write_dev(&one, 0x13000020, sizeof(int));
+		syscall_write_dev(&one, 0x13000020, sizeof(char));
         // if error occur, then panic.
 		int status;
 		syscall_read_dev(&status, 0x13000030, sizeof(int));
