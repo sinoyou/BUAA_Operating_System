@@ -197,13 +197,32 @@ read(int fdnum, void *buf, u_int n)
 	struct Fd *fd;
 
 	// Step 1: Get fd and dev.
-
+	r = fd_lookup(fdnum, &fd);
+		if (r < 0) {
+			writef("[DEBUG] read: fd_lookup failed!\n");
+			return r;
+		}
+	r = dev_lookup(fd->fd_dev_id, &dev);
+		if(r < 0) {
+			writef("[DEBUG] read: dev_lookup failed!\n");
+			return r;
+		}
 	// Step 2: Check open mode.
-
+	if ((fd->fd_omode & O_ACCMODE)==O_WRONLY) {
+		writef("[DEBUG] [%08x] write %d -- to read write_only\n", env->env_id, fdnum);
+		return -E_INVAL;
+	}
+	if(debug) writef("read %d %p %d via dev_%s\n",
+					fdnum, buf, n, dev->dev_name);
+	
 	// Step 3: Read starting from seek position.
-
+	// dev_write(struct Fd *, const void*, u_int, u_int) 
+	r = (*dev->dev_read)(fd, buf, n, fd->fd_offset);		// how can we use seek here???
 	// Step 4: Update seek position and set '\0' at the end of buf.
-
+	if(r > 0) {
+		fd->fd_offset += r;
+	}
+	
 	return r;
 }
 

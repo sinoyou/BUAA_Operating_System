@@ -448,6 +448,14 @@ int sys_ipc_can_send(int sysno, u_int envid, u_int value, u_int srcva,
 	e->env_ipc_recving = 0;
 	e->env_ipc_from = curenv->env_id;
 	e->env_ipc_value = value;
+	/*if(srcva != 0) {
+		p = page_lookup(curenv->env_pgdir, srcva, &pte);
+		if(p==NULL){
+			return -E_INVAL;
+		}
+		page_insert(e->env_pgdir, p, env->env_ipc_dstva, perm);
+	}
+	*/
 	if(srcva != 0) {
 		r = sys_mem_map(sysno, curenv->env_id, srcva, e->env_id, e->env_ipc_dstva, perm);
 		if(r < 0){
