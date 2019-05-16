@@ -38,13 +38,13 @@ open(const char *path, int mode)
 	// Hint: Please use fd_alloc.
 	r = fd_alloc(&fd);
 	if(r<0) {
-		writef("[DEBUG] open:fd_alloc failed!\n");
+//		writef("[DEBUG] open:fd_alloc failed!\n");
 		return r;
 	}
 	// Step 2: Get the file descriptor of the file to open.
 	r =  fsipc_open(path, mode, fd);
 	if(r<0) {
-		writef("[DEBUG] open: fsipc_open failed!\n");
+//		writef("[DEBUG] open: fsipc_open failed!\n");
 		return r;
 	}
 	// Step 3: Set the start address storing the file's content. Set size and fileid correctly.
@@ -58,7 +58,7 @@ open(const char *path, int mode)
 	for(i=0;i<size;i+=BY2PG) {
 		r = fsipc_map(fileid, i, va+i);
 		if(r<0) {
-			writef("[DEBUG] open: map failed!\n");
+//			writef("[DEBUG] open: map failed!\n");
 			return r;
 		}
 	}
@@ -265,6 +265,8 @@ int
 remove(const char *path)
 {
 	// Your code here.
+	return fsipc_remove(path);
+
 }
 
 // Overview:
