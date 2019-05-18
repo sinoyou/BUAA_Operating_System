@@ -543,7 +543,10 @@ dir_lookup(struct File *dir, char *name, struct File **file)
 		// Hint: Use file_get_block.
 		r = file_get_block(dir, i, &blk);
 		if(r<0){
+<<<<<<< HEAD
 			writef("[DEBUG] dir_lookup: file_get_block failed!\n");
+=======
+>>>>>>> parent of cf31ae8... commit lab5
 			user_panic("[DEBUG] dir_lookup");
 			return r;
 		}
