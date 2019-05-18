@@ -156,7 +156,7 @@ void finish_fs(char *name) {
     memcpy(disk[1].data, &super, sizeof(super));
 
     // Dump data in `disk` to target image file.
-    fd = }open(name, O_RDWR|O_CREAT, 0666);
+    fd = open(name, O_RDWR|O_CREAT, 0666);
     for(i = 0; i < 1024; ++i) {
         reverse_block(disk+i);
         write(fd, disk[i].data, BY2BLK);
@@ -202,15 +202,13 @@ int make_link_block(struct File *dirf, int nblk) {
 struct File *create_file(struct File *dirf) {
     struct File *dirblk;
     int i, bno, found;
-    int nblk = dirf->f_size / BY2BLK;			// blocks under the dirf
+    int nblk = dirf->f_size / BY2BLK;
 	
-    // Your code here
-	if(nblk == 0) {								// empty dir
-		return (struct File *)(disk[make_link_block(dirf, 0)].data);	// new a block
-	} else if (nblk <= NDIRECT) {				// direct pointer	
-		// the content in the di/indirect point is the index of the block
-		bno = dirf -> f_direct[nblk-1];			// get the last block
-	} else {									// indirect pointer
+	if(nblk == 0) {					// empty dir
+		return (struct File *)(disk[make_link_block(dirf, 0)].data);
+	} else if (nblk <= NDIRECT) {		// direct pointer
+		bno = dirf -> f_direct[nblk-1];
+	} else {				// indirect pointer
 		bno = ((uint32_t *) (disk[dirf -> f_indirect].data))[nblk-1];
 	}
 
@@ -218,11 +216,12 @@ struct File *create_file(struct File *dirf) {
 
 	for(i=0;i < FILE2BLK;i++) {
 		if(dirblk[i].f_name[0]=='\0'){
-			return &dirblk[i];				// return the first empty file
+			return &dirblk[i];
 		}
 	}
 	
 	return (struct File *)(disk[make_link_block(dirf, nblk)].data);
+    // Your code here
 }
 
 // Write file to disk under specified dir.
