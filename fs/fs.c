@@ -87,12 +87,12 @@ unmap_block(u_int blockno)
 	int r;
 	// Step 1: check if this block is mapped.
 	if(block_is_mapped(blockno) == 0) {
-		return 0;
+		return;
 	}
 	// Step 2: if this block is used(not free) and dirty, it needs to be synced to disk,
 	// can't be unmap directly.
 	if((!block_is_free(blockno))&&(block_is_dirty(blockno))) {
-		write_block(blockno);
+		write_block(blockno);		// write a block to the disk
 	}
 	// Step 3: use `syscall_mem_unmap` to unmap corresponding virtual memory.
 	r = syscall_mem_unmap(0, diskaddr(blockno));
@@ -543,7 +543,7 @@ dir_lookup(struct File *dir, char *name, struct File **file)
 		// Hint: Use file_get_block.
 		r = file_get_block(dir, i, &blk);
 		if(r<0){
-			user_panic("[DEBUG] dir_lookup");
+			wirtef("[DEBUG] dir_lookup: file_get_block failed!\n");
 			return r;
 		}
 		// Step 3: Find target file by file name in all files on this block.
@@ -552,7 +552,7 @@ dir_lookup(struct File *dir, char *name, struct File **file)
 		for(j = 0; j < FILE2BLK;j++) {
 			if(strcmp(f[j].f_name,name)==0) {
 				*file = &f[j];
-				f[j].f_dir = dir;
+				f[j].f_dir = dir;	// set the father dir
 				return 0;
 			}
 		}
