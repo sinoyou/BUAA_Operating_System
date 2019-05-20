@@ -87,12 +87,12 @@ unmap_block(u_int blockno)
 	int r;
 	// Step 1: check if this block is mapped.
 	if(block_is_mapped(blockno) == 0) {
-		return 0;
+		return ;
 	}
 	// Step 2: if this block is used(not free) and dirty, it needs to be synced to disk,
 	// can't be unmap directly.
 	if((!block_is_free(blockno))&&(block_is_dirty(blockno))) {
-		write_block(blockno);
+		write_block(blockno);		// write a block to disk
 	}
 	// Step 3: use `syscall_mem_unmap` to unmap corresponding virtual memory.
 	r = syscall_mem_unmap(0, diskaddr(blockno));
@@ -541,15 +541,16 @@ dir_lookup(struct File *dir, char *name, struct File **file)
 	for (i = 0; i < nblock; i++) {
 		// Step 2: Read the i'th block of the dir.
 		// Hint: Use file_get_block.
-		r = file_get_block(dir, i, &blk);
+		r = file_get_block(dir, i, &blk);	// 找到目录中第i个文件索引块
 		if(r<0){
-			user_panic("[DEBUG] dir_lookup");
+			writef("[DEBUG] dir_lookup: failed!\n");
+
 			return r;
 		}
 		// Step 3: Find target file by file name in all files on this block.
 		// If we find the target file, set the result to *file and set f_dir field.
 		f = (struct File *) blk;
-		for(j = 0; j < FILE2BLK;j++) {
+		for(j = 0; j < FILE2BLK;j++) {		// 遍历该文件索引块
 			if(strcmp(f[j].f_name,name)==0) {
 				*file = &f[j];
 				f[j].f_dir = dir;
@@ -804,7 +805,7 @@ file_flush(struct File *f)
 	nblocks = f->f_size / BY2BLK + 1;
 
 	for (bno = 0; bno < nblocks; bno++) {
-		if ((r = file_map_block(f, bno, &diskno, 0)) < 0) {
+		if ((r = file_map_block(f, bno, &diskno, 0)) < 0) {		// haven't load to the mem
 			continue;
 		}
 		if (block_is_dirty(diskno)) {
@@ -832,6 +833,7 @@ void
 file_close(struct File *f)
 {
 	// Flush the file itself, if f's f_dir is set, flush it's f_dir.
+	// no need to unmap
 	file_flush(f);
 	if (f->f_dir) {
 		file_flush(f->f_dir);

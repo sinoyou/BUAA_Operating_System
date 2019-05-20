@@ -37,8 +37,8 @@ ide_read(u_int diskno, u_int secno, void *dst, u_int nsecs)
 		int offset_sum = offset_begin + offset;
 		syscall_write_dev(&offset_sum, 0x13000000, sizeof(int));
 		syscall_write_dev(&zero, 0x13000020, sizeof(char));
-		int status;
-		syscall_read_dev(&status, 0x13000030, sizeof(int));
+		char status;
+		syscall_read_dev(&status, 0x13000030, sizeof(char));
 
         // error occurred, then panic.
 		if(status == 0) {
@@ -83,8 +83,8 @@ ide_write(u_int diskno, u_int secno, void *src, u_int nsecs)
 		syscall_write_dev(src+offset, 0x13004000, 0x200);
 		syscall_write_dev(&one, 0x13000020, sizeof(char));
         // if error occur, then panic.
-		int status;
-		syscall_read_dev(&status, 0x13000030, sizeof(int));
+		char status;
+		syscall_read_dev(&status, 0x13000030, sizeof(char));
 		if(status == 0) {
 			user_panic("[DEBUG] ide_read: read failed!\n");
 		}

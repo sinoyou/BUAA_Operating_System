@@ -109,7 +109,7 @@ void init_disk() {
     disk[0].type = BLOCK_BOOT;
 
     // Step 2: Initialize boundary.
-    nbitblock = (NBLOCK + BIT2BLK - 1) / BIT2BLK;
+    nbitblock = (NBLOCK + BIT2BLK - 1) / BIT2BLK;		// 计算位图存储需要的块的数量
     nextbno = 2 + nbitblock;
 
     // Step 2: Initialize bitmap blocks.
@@ -119,7 +119,7 @@ void init_disk() {
     for(i = 0; i < nbitblock; ++i) {
         memset(disk[2+i].data, 0xff, NBLOCK/8);
     }
-    if(NBLOCK != nbitblock * BY2BLK) {
+    if(NBLOCK != nbitblock * BY2BLK) {		// 不能将最后一块位图块靠后的一部分内容记作空闲，因为这些磁盘块不存在
         diff = NBLOCK % BY2BLK / 8;
         memset(disk[2+(nbitblock-1)].data+diff, 0x00, BY2BLK - diff);
     }
@@ -148,6 +148,7 @@ void flush_bitmap() {
 }
 
 // Finish all work, dump block array into physical file.
+// 将在内存中组织完成的操作写入到文件中
 void finish_fs(char *name) {
     int fd, i, k, n, r;
     uint32_t *p;
@@ -187,7 +188,7 @@ void save_block_link(struct File *f, int nblk, int bno)
 int make_link_block(struct File *dirf, int nblk) {
     save_block_link(dirf, nblk, nextbno);
     dirf->f_size += BY2BLK;
-    return next_block(BLOCK_FILE);
+    return next_block(BLOCK_FILE);		// next_block 用于分配一个新的blk
 }
 
 // Overview:
@@ -203,23 +204,24 @@ struct File *create_file(struct File *dirf) {
     struct File *dirblk;
     int i, bno, found;
     int nblk = dirf->f_size / BY2BLK;
-	
-	if(nblk == 0) {					// empty dir
+	// f_size 文件索引块占用的大小
+	// 目录FILE: 1024个指针对应文件索引块，每个文件索引块中均有FILE2BLK个文件索引
+	if(nblk == 0) {							// empty dir
 		return (struct File *)(disk[make_link_block(dirf, 0)].data);
-	} else if (nblk <= NDIRECT) {		// direct pointer
+	} else if (nblk <= NDIRECT) {			// direct pointer
 		bno = dirf -> f_direct[nblk-1];
-	} else {				// indirect pointer
+	} else {								// indirect pointer
 		bno = ((uint32_t *) (disk[dirf -> f_indirect].data))[nblk-1];
 	}
-
+	// bno -> 当前文件中最后一个块
 	dirblk = (struct File*)(disk[bno].data);
-
-	for(i=0;i < FILE2BLK;i++) {
+	// dirblk -> 最后一个块中的文件
+	for(i=0;i < FILE2BLK;i++) {			// 遍历最后一个块中的索引指针，查看时候还有空闲的索引
 		if(dirblk[i].f_name[0]=='\0'){
 			return &dirblk[i];
 		}
 	}
-	
+	// 没有空闲索引，建立新的块
 	return (struct File *)(disk[make_link_block(dirf, nblk)].data);
     // Your code here
 }
@@ -229,7 +231,7 @@ void write_file(struct File *dirf, const char *path) {
     int iblk = 0, r = 0, n = sizeof(disk[0].data);
     uint8_t buffer[n+1], *dist;
     struct File *target = create_file(dirf);
-    int fd = open(path, O_RDONLY);
+    int fd = open(path, O_RDONLY);		// open the file
     
     // Get file name with no path prefix.
     const char *fname = strrchr(path, '/');
@@ -239,12 +241,12 @@ void write_file(struct File *dirf, const char *path) {
         fname = path;
     strcpy(target->f_name, fname);
     
-    target->f_size = lseek(fd, 0, SEEK_END);
+    target->f_size = lseek(fd, 0, SEEK_END);		// get the size of the file
     target->f_type = FTYPE_REG;
     
     // Start reading file.
-    lseek(fd, 0, SEEK_SET);
-    while((r = read(fd, disk[nextbno].data, n)) > 0) {
+    lseek(fd, 0, SEEK_SET);			// reset the point to the start of the file
+    while((r = read(fd, disk[nextbno].data, n)) > 0) {		// 读一块写一块
         save_block_link(target, iblk++, next_block(BLOCK_DATA));
     }
     close(fd); // Close file descriptor.
@@ -259,6 +261,18 @@ void write_file(struct File *dirf, const char *path) {
 //      We ASSUM that this funcion will never fail
 void write_directory(struct File *dirf, char *name) {
     // Your code here
+	/*
+	int r;
+	struct File *target = create_file(dirf);
+	const char *fname = strrchr(name,'/');
+	if(fname)
+		fname++;
+	else 
+		fname = name;
+	strcpy(target->f_name, fname);
+	target->f_size = 0;
+	target->f_type = FTYPE_DIR;
+	*/
 }
 
 int main(int argc, char **argv) {

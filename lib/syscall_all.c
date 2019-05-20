@@ -436,13 +436,17 @@ int sys_ipc_can_send(int sysno, u_int envid, u_int value, u_int srcva,
 	int r;
 	struct Env *e;
 	struct Page *p;
-	
+
+	if(srcva >= UTOP || srcva < 0) {
+		if(debug_mode) panic("[DEBUG] sys_ipc_can_send: srcva wrong here!\n");
+	}
+
 	r = envid2env(envid, &e, 0);
 	if(r < 0){
 		if(debug_mode) panic("[DEBUG] sys_ipc_can_send: envid2env wrong!\n");
 		return r;
 	}
-	if(e->env_ipc_recving != 1) {
+	if(e->env_ipc_recving == 0) {
 		return -E_IPC_NOT_RECV;
 	}
 	e->env_ipc_recving = 0;

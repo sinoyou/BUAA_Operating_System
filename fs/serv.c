@@ -20,7 +20,7 @@ struct Open {
 #define FILEVA 			0x60000000
 
 // initialize to force into data section
-struct Open opentab[MAXOPEN] = { { 0, 0, 1 } };
+struct Open opentab[MAXOPEN] = { { 0, 0, 1 } };			// 文件打开记录表
 
 // Virtual address at which to receive page mappings containing client requests.
 #define REQVA	0x0ffff000
