@@ -143,7 +143,27 @@ duppage(u_int envid, u_int pn)
 	// vpt -> pte[]
 	Pte * ppte = vpt[pn];
 	perm = (*vpt)[pn] & 0xfff;
-/*
+		
+	if(perm & PTE_V) {
+		if((perm & PTE_R)&&!(perm&PTE_LIBRARY)&&!(perm&PTE_COW)){
+			perm = perm | PTE_COW;
+			if(syscall_mem_map(0,addr,envid,addr,perm)!=0) {
+				user_panic("[DEBUG] fork.c duppage: syscall_mem_map1!\n");
+			} 
+			if(syscall_mem_map(0,addr,0,addr,perm)!=0) {
+				user_panic("[DEBUG] fork.c duppage: syscall_mem_map2!\n");
+			}
+		} else {
+			if(syscall_mem_map(0,addr,envid,addr,perm)!=0) {
+				user_panic("[DEBUG] fork.c suppage: syscall_mem_map3!\n");
+			}
+		}
+	}
+}
+
+
+
+	/*
 	if(perm & PTE_V) {
 		if((perm & PTE_R) || (perm & PTE_COW)) {
 			if(perm & PTE_LIBRARY) {
@@ -160,8 +180,9 @@ duppage(u_int envid, u_int pn)
 		ret = syscall_mem_map(0, pn*BY2PG, envid, pn*BY2PG,	perm);
 		if(ret < 0) return ret;			
 		}
-	}
-	*/
+	}*/
+
+	/*
 	if((perm & PTE_V) == 0) {
 		// not valide
 	}else if((perm & PTE_R) == 0) {
@@ -205,9 +226,8 @@ duppage(u_int envid, u_int pn)
 			user_panic("[DEBUG] child map failed! PTE_COW\n");
 			return ret;
 		}
-	}
+	} */
 	//	user_panic("duppage not implemented");
-}
 
 /* Overview:
  * 	User-level fork. Create a child and then copy our address space
