@@ -106,9 +106,28 @@ again:
 			}
 			// Your code here -- open t for reading,
 			// dup it onto fd 0, and then close the fd you got.
-			user_panic("< redirection not implemented");
+			writef("[DEBUG] < %S ! \n",t);
+			fdnum = open(t, O_RDONLY);
+			if(fdnum < 0) {
+				writef("[DEBUG] sh: < open error!\n");
+			}
+			r = dup(fdnum, 0);
+			if(r < 0) writef("[DEBUG] sh: < dup error!\n");
+			close(fdnum);
 			break;
 		case '>':
+			if(gettoken(0, &t) != 'w'){
+				writef("syntax error: > not followed by word\n");
+				exit();
+			}
+			writef("[DEBUG] > %S ! \n",t);
+			fdnum = open(t, O_WRONLY);
+			if(fdnum < 0) {
+				writef("[DEBUG] sh: > open error!\n");
+			}
+			r = dup(fdnum, 1);
+			if(r < 0) writef("[DEBUG] sh: > dup error!\n");
+			close(fdnum);
 			// Your code here -- open t for writing,
 			// dup it onto fd 1, and then close the fd you got.
 			user_panic("> redirection not implemented");
@@ -116,7 +135,11 @@ again:
 		case '|':
 			// Your code here.
 			// 	First, allocate a pipe.
+			r = pipe(p);
+			if(r<0) writef("[DEBUG] sh.c: | wrong at pipe!\n");
 			//	Then fork.
+			int child_id;
+			child_id = fork();
 			//	the child runs the right side of the pipe:
 			//		dup the read end of the pipe onto 0
 			//		close the read end of the pipe
@@ -129,7 +152,19 @@ again:
 			//		set "rightpipe" to the child envid
 			//		goto runit, to execute this piece of the pipeline
 			//			and then wait for the right side to finish
-			user_panic("| not implemented");
+			// user_panic("| not implemented");
+			if(child_id == 0) {
+				dup(p[0], 0);
+				close(p[0]);
+				close(p[1]);
+				goto again;
+			} else {
+				dup(p[1], 1);
+				close(p[1]);
+				close(p[0]);
+				rightpipe = child_id;
+				goto runit;
+			}
 			break;
 		}
 	}

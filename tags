@@ -1207,6 +1207,7 @@ user_bcopy	user/fork.c	/^void user_bcopy(const void *src, void *dst, size_t len)
 user_bzero	user/fork.c	/^void user_bzero(void *v, u_int n)$/;"	f
 user_dir	Makefile	/^user_dir	  := user$/;"	m
 user_dir	fs/Makefile	/^user_dir := ..\/user$/;"	m
+user_disk	Makefile	/^user_disk     := gxemul\/fs.img$/;"	m
 user_lp_Print	user/print.c	/^user_lp_Print(void (*output)(void *, const char *, int),$/;"	f
 user_myoutput	user/printf.c	/^static void user_myoutput(void *arg, const char *s, int l)$/;"	f	file:
 user_out2string	user/fprintf.c	/^static void user_out2string(void *arg, const char *s, int l)$/;"	f	file:
