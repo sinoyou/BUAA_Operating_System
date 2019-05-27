@@ -143,7 +143,8 @@ duppage(u_int envid, u_int pn)
 	// vpt -> pte[]
 	Pte * ppte = vpt[pn];
 	perm = (*vpt)[pn] & 0xfff;
-		
+	addr = pn*BY2PG;
+
 	if(perm & PTE_V) {
 		if((perm & PTE_R)&&!(perm&PTE_LIBRARY)&&!(perm&PTE_COW)){
 			perm = perm | PTE_COW;

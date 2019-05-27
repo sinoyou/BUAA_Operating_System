@@ -7,6 +7,7 @@ static int pipeclose(struct Fd*);
 static int piperead(struct Fd *fd, void *buf, u_int n, u_int offset);
 static int pipestat(struct Fd*, struct Stat*);
 static int pipewrite(struct Fd *fd, const void *buf, u_int n, u_int offset);
+int debug_mode = 0;
 
 struct Dev devpipe =
 {
@@ -92,7 +93,7 @@ _pipeisclosed(struct Fd *fd, struct Pipe *p)
 		pfp = pageref(p);
 	} while (runs!=(env->env_runs));
 
-	if(pageref(fd) == pageref(p)) return 1;
+	if(pfd==pfp) return 1;
 	// user_panic("_pipeisclosed not implemented");
 	return 0;
 }
@@ -124,6 +125,8 @@ piperead(struct Fd *fd, void *vbuf, u_int n, u_int offset)
 	int i;
 	struct Pipe *p;
 	char *rbuf;
+	if(debug_mode)
+		writef("[DEBUG] pipe.c: getinto piperead!\n");
 	
 	p = (struct Pipe*)fd2data(fd);
 	rbuf = (char*)vbuf;
@@ -139,6 +142,7 @@ piperead(struct Fd *fd, void *vbuf, u_int n, u_int offset)
 		rbuf[i] = p->p_buf[index];
 		p->p_rpos++;
 	}
+	if(debug_mode) writef("[DEBUG] pipe.c: leave the piperead!\n");
 	return i;
 	user_panic("piperead not implemented");
 //	return -E_INVAL;
@@ -158,6 +162,8 @@ pipewrite(struct Fd *fd, const void *vbuf, u_int n, u_int offset)
 	struct Pipe *p;
 	char *wbuf;
 	
+	if(debug_mode) writef("[DEBUG] pipe.c: getinto pipewrite!\n");
+
 	p = (struct Pipe*) fd2data(fd);
 	wbuf = vbuf;
 
@@ -176,6 +182,8 @@ pipewrite(struct Fd *fd, const void *vbuf, u_int n, u_int offset)
 			syscall_yield();
 		}
 	}
+	if(debug_mode) writef("[DEBUG] pipe.c getout pipewrite!\n");
+
 //	return -E_INVAL;
 //	user_panic("pipewrite not implemented");
 	return n;
