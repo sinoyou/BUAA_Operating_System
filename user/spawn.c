@@ -102,6 +102,33 @@ int
 usr_load_elf(int fd , Elf32_Phdr *ph, int child_envid){
 	//Hint: maybe this function is useful 
 	//      If you want to use this func, you should fill it ,it's not hard
+	u_char *binary = fd2data(fd);
+	Elf32_Ehdr *ehdr = binary;
+	Elf32_Phdr *phdr = NULL;
+	int size;
+	size = ((struct Filefd*)fd) -> f_file.f_size;
+
+	u_char *ptr_ph_table = NULL;
+	Elf32_Half ph_entry_cnt;
+	Elf32_Half ph_entry_size;
+	int r;
+
+	if(size < 4 || !usr_is_elf_format(binary)) {
+		user_panic("[DEBUG] Not a elf\n");
+	}
+	
+	ptr_ph_table = binary + ehdr->e_phoff;
+	ph_entry_cnt = ehdr->e_phnum;
+	ph_entry_size = ehdr->e_phentsize;
+	while(ph_entry_cnt--) {
+		phdr = (Elf32_Phdr *)ptr_ph_table;
+		if(phdr->p_type == PT_LOAD) {
+			_map(phdr->p_vaddr, phdr->p_memsz, phdr->p_offset+binary, phdr->p_filesz, child_envid);
+		}
+		ptr_ph_table += ph_entry_size;
+	}
+	writef("[DEBUG] user_load_elf ok!\n");
+	
 	return 0;
 }
 
@@ -117,6 +144,8 @@ int spawn(char *prog, char **argv)
 	Elf32_Ehdr* elf;
 	Elf32_Phdr* ph;
 	// Note 0: some variable may be not used,you can cancel them as you like
+	text_start = 0x1000;
+	int fdnum;
 	// Step 1: Open the file specified by `prog` (prog is the path of the program)
 	if((r=open(prog, O_RDONLY))<0){
 		user_panic("spawn ::open line 102 RDONLY wrong !\n");
@@ -124,7 +153,12 @@ int spawn(char *prog, char **argv)
 	}
 	// Your code begins here
 	// Before Step 2 , You had better check the "target" spawned is a execute bin 
+	fdnum = r;
+	fd = num2fd(fdnum);
+	elf = fd2data(fd);	
 	// Step 2: Allocate an env (Hint: using syscall_env_alloc())
+	child_envid = syscall_env_alloc();
+	if(child_envid < 0) user_panic("[DEBUG] spawn: env_alloc failed!\n");
 	// Step 3: Using init_stack(...) to initialize the stack of the allocated env
 	// Step 3: Map file's content to new env's text segment
 	//        Hint 1: what is the offset of the text segment in file? try to use objdump to find out.
@@ -136,6 +170,7 @@ int spawn(char *prog, char **argv)
 	// Note2: You can achieve this func in any way ，remember to ensure the correctness
 	//        Maybe you can review lab3 
 	// Your code ends here
+	usr_load_elf(fd, 0, child_envid);
 
 	struct Trapframe *tf;
 	writef("\n::::::::::spawn size : %x  sp : %x::::::::\n",size,esp);
@@ -187,4 +222,31 @@ spawnl(char *prog, char *args, ...)
 	return spawn(prog, &args);
 }
 
+int _map(u_int va, u_int32_t sgsize, u_char *bin, u_int32_t bin_size, int child_envid) 
+{
+	u_int offset = va - ROUNDDOWN(va, BY2PG);
+	int i, j, r;
+	int tmp = 0x50000000;
+	int blk;
+	char *p;
+	for(i=0;i<bin_size;i++) {
+		syscall_mem_alloc(0, tmp, PTE_V|PTE_R);
+		if(i==0) {
+			if(bin_size < BY2PG - offset) {
+				user_bcopy(bin, tmp+offset, bin_size);
+			} else {
+				user_bcopy(bin, tmp+offset, BY2PG - offset);
+			}
+			i -= offset;
+		}
+		syscall_mem_map(0, tmp, child_envid, va+i, PTE_V|PTE_R);
+		syscall_mem_unmap(0, tmp);
+	}
 
+	while(i < sgsize) {
+		if(syscall_mem_alloc(child_envid, va+i, PTE_V|PTE_R)) {
+			writef("[DEBUG] spawn.c: _map memalloc wrong!\n");
+		}
+		i += BY2PG;
+	}
+}
