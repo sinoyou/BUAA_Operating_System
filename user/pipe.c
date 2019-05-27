@@ -92,7 +92,7 @@ _pipeisclosed(struct Fd *fd, struct Pipe *p)
 		pfp = pageref(p);
 	} while (runs!=(env->env_runs));
 
-	if(pageref(fd) != pageref(p)) return 1;
+	if(pageref(fd) == pageref(p)) return 1;
 	// user_panic("_pipeisclosed not implemented");
 	return 0;
 }
