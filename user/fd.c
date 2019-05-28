@@ -178,13 +178,11 @@ dup(int oldfdnum, int newfdnum)
 	return newfdnum;
 
 err:
-	// syscall_mem_unmap(0, (u_int)newfd);
+	syscall_mem_unmap(0, (u_int)newfd);
 
 	for (i = 0; i < PDMAP; i += BY2PG) {
 		syscall_mem_unmap(0, nva + i);
 	}
-	syscall_mem_unmap(0, (u_int)newfd);
-
 	return r;
 }
 
