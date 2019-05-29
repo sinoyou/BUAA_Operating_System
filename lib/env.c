@@ -211,7 +211,7 @@ env_alloc(struct Env **new, u_int parent_id)
      * especially the sp register,CPU status. */
     e->env_tf.cp0_status = 0x10001004;
 	e->env_tf.regs[29] = USTACKTOP ;
-	// e -> env_runs = 0;
+	e -> env_runs = 0;
     /*Step 5: Remove the new Env from Env free list*/
 	*new = e;
 	LIST_REMOVE(e, env_link);
@@ -507,7 +507,7 @@ env_run(struct Env *e)
 	}
     /*Step 2: Set 'curenv' to the new environment. */
 	curenv = e;
-	// curenv->env_runs++;
+	curenv->env_runs++;
 	//	curenv->env_status = ENV_RUNNABLE;
     /*Step 3: Use lcontext() to switch to its address space. */
 	lcontext((u_long)curenv->env_pgdir);		// load env_pgdir from mCONTEXT(a word save addr of pgdir)
