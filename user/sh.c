@@ -114,7 +114,6 @@ again:
 			r = dup(fdnum, 0);
 			if(r < 0) writef("[DEBUG] sh: < dup error!\n");
 			close(fdnum);
-			goto runit;
 			break;
 		case '>':
 			if(gettoken(0, &t) != 'w'){
@@ -129,7 +128,6 @@ again:
 			r = dup(fdnum, 1);
 			if(r < 0) writef("[DEBUG] sh: > dup error!\n");
 			close(fdnum);
-			goto runit;
 			// Your code here -- open t for writing,
 			// dup it onto fd 1, and then close the fd you got.
 			// user_panic("> redirection not implemented");
@@ -261,7 +259,6 @@ umain(int argc, char **argv)
 	default:
 		usage();
 	}ARGEND
-
 	if(argc > 1)
 		usage();
 	if(argc == 1){
@@ -274,13 +271,12 @@ umain(int argc, char **argv)
 		interactive = iscons(0);
 	for(;;){
 		if (interactive)
-			writef(1, "\n$ ");
+			fwritef(1, "\n$ ");
 		readline(buf, sizeof buf);
-		
 		if (buf[0] == '#')
 			continue;
 		if (echocmds)
-			writef(1, "# %s\n", buf);
+			fwritef(1, "# %s\n", buf);
 		if ((r = fork()) < 0)
 			user_panic("fork: %e", r);
 		if (r == 0) {

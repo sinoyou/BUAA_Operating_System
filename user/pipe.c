@@ -179,7 +179,8 @@ pipewrite(struct Fd *fd, const void *vbuf, u_int n, u_int offset)
 		p->p_buf[index] = wbuf[i];
 		p->p_wpos++;
 		while(i+1<n && p->p_wpos >= p->p_rpos + BY2PIPE) {
-			syscall_yield();
+			if(_pipeisclosed(fd, p)) return 0;
+			else syscall_yield();
 		}
 	}
 	if(debug_mode) writef("[DEBUG] pipe.c getout pipewrite!\n");
