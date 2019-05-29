@@ -236,7 +236,7 @@ int spawn(char *prog, char **argv)
 	tf->pc = UTEXT;
 	tf->regs[29]=esp;
 
-
+	syscall_set_pgfault_handler(child_envid, __asm_pgfault_handler, UXSTACKTOP);
 	// Share memory
 	u_int pdeno = 0;
 	u_int pteno = 0;
