@@ -121,7 +121,7 @@ again:
 				exit();
 			}
 			// writef("[DEBUG] > %S ! \n",t);
-			fdnum = open(t, O_WRONLY);
+			fdnum = open(t, O_RDWR);
 			if(fdnum < 0) {
 				writef("[DEBUG] sh: > open error!\n");
 			}
@@ -162,7 +162,7 @@ again:
 				dup(p[1], 1);
 				close(p[1]);
 				close(p[0]);
-				// rightpipe = child_id;
+				rightpipe = child_id;
 				goto runit;
 			}
 			break;

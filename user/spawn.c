@@ -134,7 +134,7 @@ usr_load_elf(int fd , Elf32_Phdr *ph, int child_envid){
 		if (partial > 0) {
 			user_bzero((u_char*)blk + partial, BY2PG - partial);
 		}
-		if(r < 0) return 0;
+		if(r < 0) return r;
 		syscall_mem_map(0, blk, child_envid, va+i, PTE_V | PTE_R);
 		i += BY2PG;
 	}
