@@ -314,6 +314,7 @@ FILE2BLK	include/fs.h	39;"	d
 FILEBASE	user/fd.c	9;"	d	file:
 FILEVA	fs/serv.c	20;"	d	file:
 FSIMGFILES	fs/Makefile	/^FSIMGFILES := motd newmotd $(user_dir)\/testarg.b $(user_dir)\/init.b $(USERAPPS)$/;"	m
+FSIMGFILES	fs/Makefile	/^FSIMGFILES := motd newmotd s output $(user_dir)\/testarg.b $(user_dir)\/init.b $(USERAPPS)$/;"	m
 FSIMGFILES	fs/Makefile	/^FSIMGFILES := motd newmotd$/;"	m
 FSLIB	fs/Makefile	/^FSLIB :=	fs.o \\$/;"	m
 FSREQ_CLOSE	include/fs.h	59;"	d

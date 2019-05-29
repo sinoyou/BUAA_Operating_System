@@ -136,7 +136,7 @@ piperead(struct Fd *fd, void *vbuf, u_int n, u_int offset)
 		else 
 			syscall_yield();
 	}
-	for(i=0;i<n&&(p->p_rpos)<(p->p_wpos);i++) {
+	for(i=0;i<n && (p->p_rpos)<(p->p_wpos);i++) {
 		int index = p->p_rpos % BY2PIPE;
 		rbuf[i] = p->p_buf[index];
 		p->p_rpos++;

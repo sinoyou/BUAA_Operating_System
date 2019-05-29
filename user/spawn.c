@@ -7,6 +7,7 @@
 #define TMPPAGE		(BY2PG)
 #define TMPPAGETOP	(TMPPAGE+BY2PG)
 
+extern void __asm_pgfault_handler(void);
 int
 init_stack(u_int child, char **argv, u_int *init_esp)
 {
@@ -108,15 +109,6 @@ usr_load_elf(int fd , Elf32_Phdr *ph, int child_envid){
 	u_int bin_size = ph->p_filesz;
 	u_int off = ph->p_offset;
 
-	// u_char *binary = fd2data(fd);
-	// Elf32_Ehdr *ehdr = binary;
-	// Elf32_Phdr *phdr = NULL;
-	// int size;
-	// size = ((struct Filefd*)fd) -> f_file.f_size;
-
-	// u_char *ptr_ph_table = NULL;
-	// Elf32_Half ph_entry_cnt;
-	// Elf32_Half ph_entry_size;
 	void *blk;
 	int i = 0;
 	int r;
@@ -144,27 +136,8 @@ usr_load_elf(int fd , Elf32_Phdr *ph, int child_envid){
 		i += BY2PG;
 	}
 
-	/*
-	if(size < 4 || !usr_is_elf_format(binary)) {
-		user_panic("[DEBUG] Not a elf\n");
-	}
-	
-	ptr_ph_table = binary + ehdr->e_phoff;
-	ph_entry_cnt = ehdr->e_phnum;
-	ph_entry_size = ehdr->e_phentsize;
-	while(ph_entry_cnt--) {
-		phdr = (Elf32_Phdr *)ptr_ph_table;
-		if(phdr->p_type == PT_LOAD) {
-			_map(phdr->p_vaddr, phdr->p_memsz, phdr->p_offset+binary, phdr->p_filesz, child_envid);
-		}
-		ptr_ph_table += ph_entry_size;
-	}
-	writef("[DEBUG] user_load_elf ok!\n");
-	*/
 	return 0;
 }
-
-extern void __asm_pgfault_handler(void);
 
 int spawn(char *prog, char **argv)
 {
@@ -228,15 +201,13 @@ int spawn(char *prog, char **argv)
 		ptr_ph_table += ph_entry_size;
 	}
 
-	// usr_load_elf(fd, 0, child_envid);
-
 	struct Trapframe *tf;
 	writef("\n::::::::::spawn size : %x  sp : %x::::::::\n",size,esp);
 	tf = &(envs[ENVX(child_envid)].env_tf);
 	tf->pc = UTEXT;
 	tf->regs[29]=esp;
 
-	syscall_set_pgfault_handler(child_envid, __asm_pgfault_handler, UXSTACKTOP);
+	syscall_set_pgfault_handler(child_envid, __asm_pgfault_handler, UXSTACKTOP);	// !!!!! set the pgfault_handler for the son!!!
 	// Share memory
 	u_int pdeno = 0;
 	u_int pteno = 0;
@@ -279,33 +250,4 @@ spawnl(char *prog, char *args, ...)
 {
 	return spawn(prog, &args);
 }
-/*
-int _map(u_int va, u_int32_t sgsize, u_char *bin, u_int32_t bin_size, int child_envid) 
-{
-	u_int offset = va - ROUNDDOWN(va, BY2PG);
-	int i, j, r;
-	int tmp = 0x50000000;
-	int blk;
-	char *p;
-	for(i=0;i<bin_size;i++) {
-		syscall_mem_alloc(0, tmp, PTE_V|PTE_R);
-		if(i==0) {
-			if(bin_size < BY2PG - offset) {
-				user_bcopy(bin, tmp+offset, bin_size);
-			} else {
-				user_bcopy(bin, tmp+offset, BY2PG - offset);
-			}
-			i -= offset;
-		}
-		syscall_mem_map(0, tmp, child_envid, va+i, PTE_V|PTE_R);
-		syscall_mem_unmap(0, tmp);
-	}
 
-	while(i < sgsize) {
-		if(syscall_mem_alloc(child_envid, va+i, PTE_V|PTE_R)) {
-			writef("[DEBUG] spawn.c: _map memalloc wrong!\n");
-		}
-		i += BY2PG;
-	}
-}
-*/

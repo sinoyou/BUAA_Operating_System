@@ -100,38 +100,39 @@ again:
 			argv[argc++] = t;
 			break;
 		case '<':
+			// Your code here -- open t for reading,
 			if(gettoken(0, &t) != 'w'){
 				writef("syntax error: < not followed by word\n");
 				exit();
 			}
-			// Your code here -- open t for reading,
-			// dup it onto fd 0, and then close the fd you got.
-			// writef("[DEBUG] < %S ! \n",t);
 			fdnum = open(t, O_RDONLY);
 			if(fdnum < 0) {
 				writef("[DEBUG] sh: < open error!\n");
 			}
+			// dup it onto fd 0, and then close the fd you got.
+			// writef("[DEBUG] < %S ! \n",t);
 			r = dup(fdnum, 0);
 			if(r < 0) writef("[DEBUG] sh: < dup error!\n");
+			// clost and goto runit
 			close(fdnum);
 			goto runit;
 			break;
 		case '>':
+			// Your code here -- open t for writing,
 			if(gettoken(0, &t) != 'w'){
 				writef("syntax error: > not followed by word\n");
 				exit();
 			}
-			// writef("[DEBUG] > %S ! \n",t);
 			fdnum = open(t, O_WRONLY);
 			if(fdnum < 0) {
 				writef("[DEBUG] sh: > open error!\n");
 			}
+			// writef("[DEBUG] > %S ! \n",t);
+			// dup it onto fd 1, and then close the fd you got.
 			r = dup(fdnum, 1);
 			if(r < 0) writef("[DEBUG] sh: > dup error!\n");
 			close(fdnum);
-			// Your code here -- open t for writing,
-			// dup it onto fd 1, and then close the fd you got.
-			// user_panic("> redirection not implemented");
+			// clost and goto runit
 			goto runit;
 			break;
 		case '|':
@@ -155,17 +156,17 @@ again:
 			//		goto runit, to execute this piece of the pipeline
 			//			and then wait for the right side to finish
 			// user_panic("| not implemented");
-			if(child_id == 0) {
+			if(child_id == 0) {			// child
 				dup(p[0], 0);
 				close(p[0]);
 				close(p[1]);
 				goto again;
-			} else {
+			} else {					// father
 				dup(p[1], 1);
 				close(p[1]);
 				close(p[0]);
-				rightpipe = child_id;
-				goto runit;
+				rightpipe = child_id;	// set rightpipe to child envid
+				goto runit;				// goto runit
 			}
 			break;
 		}
