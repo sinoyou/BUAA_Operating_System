@@ -114,6 +114,7 @@ again:
 			r = dup(fdnum, 0);
 			if(r < 0) writef("[DEBUG] sh: < dup error!\n");
 			close(fdnum);
+			goto runit;
 			break;
 		case '>':
 			if(gettoken(0, &t) != 'w'){
@@ -121,7 +122,7 @@ again:
 				exit();
 			}
 			// writef("[DEBUG] > %S ! \n",t);
-			fdnum = open(t, O_RDWR);
+			fdnum = open(t, O_WRONLY);
 			if(fdnum < 0) {
 				writef("[DEBUG] sh: > open error!\n");
 			}
@@ -131,6 +132,7 @@ again:
 			// Your code here -- open t for writing,
 			// dup it onto fd 1, and then close the fd you got.
 			// user_panic("> redirection not implemented");
+			goto runit;
 			break;
 		case '|':
 			// Your code here.

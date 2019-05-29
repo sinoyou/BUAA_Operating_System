@@ -130,7 +130,6 @@ piperead(struct Fd *fd, void *vbuf, u_int n, u_int offset)
 	
 	p = (struct Pipe*)fd2data(fd);
 	rbuf = (char*)vbuf;
-	if(n == 0) return 0;
 	while((p->p_rpos) >= (p->p_wpos)) {
 		if(_pipeisclosed(fd,p)) 
 			return 0;

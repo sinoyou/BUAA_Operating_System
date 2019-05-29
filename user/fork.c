@@ -93,7 +93,7 @@ pgfault(u_int va)
 		user_panic("[DEBUG] pgfault: pte's perm wrong!\n");
 		return ;
 	}
-	ret = syscall_mem_alloc(0, tmp, PTE_V|PTE_R);
+	ret = syscall_mem_alloc(0, tmp, perm & (~PTE_COW)|PTE_R);
 	if(ret < 0) {
 		user_panic("[DEBUG] pgfault: syscall_mem_alloc!\n");
 		return ;
@@ -103,7 +103,7 @@ pgfault(u_int va)
 	//copy the content
 	user_bcopy(va, tmp, BY2PG);    // ???why do we need to copy it ?
     //map the page on the appropriate place
-    if(syscall_mem_map(0, tmp, 0, va, PTE_V|PTE_R)!=0) {
+    if(syscall_mem_map(0, tmp, 0, va, perm & (~PTE_COW)|PTE_R)!=0) {
 		user_panic("[DEBUG] pgfault: syscall_mem_map error !\n");
 		return ;
 	}
@@ -259,12 +259,12 @@ fork(void)
 		env = &(envs[ENVX(syscall_getenvid())]);
 	} else {
 		// father
-		for(i=0;i<UTOP-BY2PG;i+=BY2PG) {
+		for(i=0;i<USTACKTOP;i+=BY2PG) {
 			if(((*vpd)[VPN(i) /1024 ])!=0 && ((*vpt)[VPN(i)])!=0) {
 				duppage(newenvid, VPN(i));
 			}
 		}
-		syscall_mem_alloc(newenvid, UXSTACKTOP - BY2PG, PTE_V|PTE_R); //分配子进程的异常处理栈
+		syscall_mem_alloc(newenvid, UXSTACKTOP - BY2PG, PTE_V|PTE_R|PTE_LIBRARY); //分配子进程的异常处理栈
 		syscall_set_pgfault_handler(newenvid, __asm_pgfault_handler, UXSTACKTOP); // 设置子进程的处理函数
 		syscall_set_env_status(newenvid, ENV_RUNNABLE );  // 设置子进程的运行状态
 
