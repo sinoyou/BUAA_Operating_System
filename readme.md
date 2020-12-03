@@ -77,4 +77,4 @@
 
 - Implement a simplified POSIX Thread mechanism, which supports full sharing of user space and mutual stack access between threads with only a small amount of necessary private space. 
 - Implement unnamed POSIX Semaphore for the synchronization and the communitcation in a process. 
-- **Slide:**[lab-challenge-POXIS(Chinese)](assets/lab-challenge-POSIX.pdf)
+- **Slide:**[lab-challenge-POXIS(Chinese)](assets/Lab-Challenge-POSIX.pdf)
