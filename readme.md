@@ -1,6 +1,6 @@
 ## BUAA OS 2019
 
-*Individual Courseword of "Operating System Project"* in Spring Semester 
+*Individual Courseword of "Operating System Project" in Spring Semester*
 
 ### General Information
 
