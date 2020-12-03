@@ -10,7 +10,9 @@
 
 **Reference**: MIT JOS (BUAA OS simplified the architecture from x86 to MIPS, for undergraduate education)
 
-**Guide Book**: [BUAA OS Guide Book (2019 Version, Chinese)](assets/guide-book.pdf)
+**Guide Book**: 
+  - [BUAA OS Guide Book (2019 Version, Chinese)](assets/guide-book.pdf)
+  - [See MIPS Run Linux (English)](assets/See-Mips-Run-Linux.pdf)
 
 
 
