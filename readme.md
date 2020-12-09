@@ -1,6 +1,6 @@
 ## BUAA OS 2019
 
-*Individual Courseword of "Operating System Project" in Spring Semester*
+*Individual Coursework of "Operating System Project" in Spring Semester*
 
 ### General Information
 
@@ -61,8 +61,7 @@
   - Implement IDE external storage disk driver.
   - Implement the file system structures on Disks(blocks management with Bitmap) and on OS(file control blocks with singly indirect pointers). 
   - Implement the interfaces of the file system for interaction between user process and file system server. 
-- **Report**: 
-  - [lab5-report(Chinese)](assets/lab5-report.pdf)
+- **Report**: [lab5-report(Chinese)](assets/lab5-report.pdf)
 
 #### Lab 6 - Pipe and Shell (Extra)
 
